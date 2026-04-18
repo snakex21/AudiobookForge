@@ -2,13 +2,20 @@ import threading
 from pathlib import Path
 import json
 import locale
+import sys
 
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
+def get_base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent.parent
+
+
+PROJECT_DIR = get_base_dir()
 CONFIG_PATH = PROJECT_DIR / "config.json"
 DEFAULT_OUTPUT_DIR = str(PROJECT_DIR / "audiobook_output")
-DEFAULT_PDF_PATH = str(PROJECT_DIR / "book.pdf")
-DEFAULT_SPEAKER_WAV = str(PROJECT_DIR / "speaker.wav")
+DEFAULT_PDF_PATH = ""
+DEFAULT_SPEAKER_WAV = ""
 
 
 def detect_system_language() -> str:

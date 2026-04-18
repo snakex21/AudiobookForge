@@ -6,7 +6,7 @@ python -m pip install pyinstaller
 
 echo Building AudiobookForge...
 echo Preferred mode: --onedir
-pyinstaller --onedir --windowed --name AudiobookForge app.py
+pyinstaller --onedir --windowed --name AudiobookForge --icon="assets\app_icon.ico" app.py
 
 echo.
 echo Build finished. Output folder: dist\AudiobookForge

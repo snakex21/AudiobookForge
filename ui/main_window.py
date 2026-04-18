@@ -1032,6 +1032,14 @@ def run_app():
 
     root = tk.Tk()
     root.title("AudiobookForge v1.0")
+    icon_path = PROJECT_DIR / "assets" / "app_icon.png"
+    if icon_path.exists():
+        try:
+            icon_image = tk.PhotoImage(file=str(icon_path))
+            root.iconphoto(True, icon_image)
+            root._icon_image = icon_image
+        except Exception:
+            pass
     root.configure(bg=BG)
     root.geometry("1200x800")
     root.minsize(900, 600)
