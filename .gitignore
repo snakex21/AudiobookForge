@@ -1,0 +1,10 @@
+piper_models/
+audiobook_output/
+config.json
+__pycache__/
+*.pyc
+dist/
+build/
+*.spec
+pages/
+chunks/

@@ -1,0 +1,7 @@
+piper-tts
+pdfplumber
+pdf2image
+pillow
+requests
+reportlab
+edge-tts
