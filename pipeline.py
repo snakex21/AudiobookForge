@@ -6,6 +6,7 @@ import threading
 import subprocess
 import shutil
 import requests
+import sys
 from pathlib import Path
 from typing import Optional, Callable, Literal, List
 from PIL import Image
@@ -19,7 +20,15 @@ except Exception:
 PDF_PATH = "book.pdf"
 OUTPUT_DIR = "audiobook_output"
 SPEAKER_WAV = "speaker.wav"
-PROJECT_DIR = Path(__file__).resolve().parent
+
+
+def get_base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
+
+
+PROJECT_DIR = get_base_dir()
 
 LLM_PROVIDER = "lmstudio"
 LLM_URLS = {
@@ -729,7 +738,7 @@ def export_translated_pdf(output_dir: Path, log_callback: Callable[[str], None])
 
         pdf_file = output_dir / "output_przetlumaczony.pdf"
 
-        font_path = Path(__file__).parent / "DejaVuSans.ttf"
+        font_path = PROJECT_DIR / "DejaVuSans.ttf"
         if not font_path.exists():
             import urllib.request
             font_url = "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf"
@@ -921,12 +930,12 @@ def get_pdf_info(pdf_path: Path) -> dict:
         return {"pages": 0, "filename": pdf_path.name}
 
 
-def save_config(config: dict, path: Path = Path("config.json")):
+def save_config(config: dict, path: Path = PROJECT_DIR / "config.json"):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2)
 
 
-def load_config(path: Path = Path("config.json")) -> dict:
+def load_config(path: Path = PROJECT_DIR / "config.json") -> dict:
     if path.exists():
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)

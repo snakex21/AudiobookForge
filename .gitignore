@@ -6,5 +6,7 @@ __pycache__/
 dist/
 build/
 *.spec
+!AudiobookForge.spec
+!AudiobookForge_onedir.spec
 pages/
 chunks/
