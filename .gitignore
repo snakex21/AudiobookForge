@@ -5,6 +5,7 @@ __pycache__/
 *.pyc
 dist/
 build/
+release/
 *.spec
 !AudiobookForge.spec
 !AudiobookForge_onedir.spec
