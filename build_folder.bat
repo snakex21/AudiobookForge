@@ -5,11 +5,10 @@ echo Installing PyInstaller...
 python -m pip install pyinstaller
 
 echo Building AudiobookForge...
-echo Preferred mode: --onefile
+echo Preferred mode: --onedir
 if exist "dist\AudiobookForge" rmdir /s /q "dist\AudiobookForge"
-if exist "dist\AudiobookForge.exe" del /q "dist\AudiobookForge.exe"
-pyinstaller --clean AudiobookForge.spec
+pyinstaller --clean AudiobookForge_onedir.spec
 
 echo.
-echo Build finished. Output file: dist\AudiobookForge.exe
+echo Build finished. Output folder: dist\AudiobookForge
 if not defined NO_PAUSE pause
