@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -20,13 +21,17 @@ class AppStateTests(unittest.TestCase):
     def test_save_writes_current_config(self):
         app_state = AppState()
         app_state.config["llm_model"] = "test-model"
+        app_state.config["_job_start_action"] = "resume"
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "config.json"
             with patch("ui.state.CONFIG_PATH", config_path):
                 app_state.save()
 
-            self.assertIn('"llm_model": "test-model"', config_path.read_text(encoding="utf-8"))
+            saved = json.loads(config_path.read_text(encoding="utf-8"))
+
+            self.assertEqual(saved["llm_model"], "test-model")
+            self.assertNotIn("_job_start_action", saved)
 
 
 if __name__ == "__main__":
