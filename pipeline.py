@@ -180,11 +180,51 @@ def resolve_project_path(path_value: str, default: str = OUTPUT_DIR) -> Path:
     return candidate if candidate.is_absolute() else PROJECT_DIR / candidate
 
 
+def resolve_source_path(path_value: str) -> Optional[Path]:
+    if not path_value:
+        return None
+    candidate = Path(path_value)
+    return candidate if candidate.is_absolute() else PROJECT_DIR / candidate
+
+
 def resolve_configured_pdf_path(config: dict) -> Optional[Path]:
     pdf_path_value = (config.get("pdf_path") or "").strip()
     if not pdf_path_value:
         return None
     return resolve_project_path(pdf_path_value, PDF_PATH)
+
+
+def resolve_project_source_path(config: dict) -> Optional[Path]:
+    project_source_value = (config.get("project_source_file") or "").strip()
+    return resolve_source_path(project_source_value)
+
+
+def ensure_project_source_copy(config: dict, output_dir: Path, log_callback: Callable[[str], None]) -> Optional[Path]:
+    if not config.get("copy_source_to_project", True):
+        return resolve_project_source_path(config)
+
+    source_value = (config.get("txt_path") or config.get("pdf_path") or "").strip()
+    source_path = resolve_source_path(source_value)
+    if not source_path or not source_path.exists() or not source_path.is_file():
+        return resolve_project_source_path(config)
+
+    source_dir = output_dir / "source"
+    source_dir.mkdir(parents=True, exist_ok=True)
+    copied_path = source_dir / source_path.name
+
+    needs_copy = True
+    if copied_path.exists():
+        try:
+            needs_copy = copied_path.stat().st_size != source_path.stat().st_size
+        except Exception:
+            needs_copy = True
+
+    if needs_copy:
+        shutil.copy2(source_path, copied_path)
+        log_callback(f"Skopiowano plik zrodlowy do projektu: {copied_path}")
+
+    config["project_source_file"] = str(copied_path)
+    return copied_path
 
 
 def get_audio_language_settings(language_code: str) -> dict:
@@ -219,7 +259,9 @@ def build_job_signature(config: dict) -> dict:
         "mode": config.get("mode", "translate_to_audio"),
         "pdf_path": str(Path(config.get("pdf_path", "book.pdf")).resolve()) if config.get("pdf_path") else "",
         "txt_path": str(Path(config.get("txt_path", "")).resolve()) if config.get("txt_path") else "",
+        "project_source_file": str(Path(config.get("project_source_file", "")).resolve()) if config.get("project_source_file") else "",
         "speaker_wav": str(Path(config.get("speaker_wav", "")).resolve()) if config.get("speaker_wav") else "",
+        "copy_source_to_project": bool(config.get("copy_source_to_project", True)),
         "pdf_language": config.get("pdf_language", "pol"),
         "target_language": config.get("target_language", "pol"),
         "extraction_mode": config.get("extraction_mode", "pypdfium"),
@@ -1211,6 +1253,7 @@ def export_translated_pdf(output_dir: Path, log_callback: Callable[[str], None])
 def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_callback: Callable[[str, int, int], None], pause_event: threading.Event, stop_event: threading.Event):
     started_at = time.time()
     pdf_path = resolve_configured_pdf_path(config)
+    project_source_path = resolve_project_source_path(config)
     output_dir = resolve_project_path(config.get("output_dir", OUTPUT_DIR))
     speaker_wav = Path(config.get("speaker_wav", "speaker.wav")) if config.get("speaker_wav") else None
     txt_path = Path(config.get("txt_path")) if config.get("txt_path") else None
@@ -1230,6 +1273,14 @@ def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_cal
     chatterbox_url = config.get("chatterbox_url", LLM_URLS["chatterbox"])
     tts_api_key = config.get("tts_api_key")
     export_pdf = config.get("export_pdf", True)
+
+    copied_source_path = ensure_project_source_copy(config, output_dir, log_callback)
+    if copied_source_path:
+        project_source_path = copied_source_path
+        if mode == "txt_to_audio" and (not txt_path or not txt_path.exists()):
+            txt_path = copied_source_path
+        elif mode != "txt_to_audio" and (not pdf_path or not pdf_path.exists()):
+            pdf_path = copied_source_path
 
     if mode != "txt_to_audio":
         configured_pdf = (config.get("pdf_path") or "").strip()
@@ -1283,7 +1334,7 @@ def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_cal
         language = get_audio_language_settings(pdf_language)
         txt_path_value = config.get("txt_path")
         output_txt = output_dir / "output.txt"
-        source_txt = Path(txt_path_value) if txt_path_value else output_txt
+        source_txt = txt_path if txt_path else (Path(txt_path_value) if txt_path_value else output_txt)
         if not source_txt.exists():
             log_callback(f"Brak pliku TXT: {source_txt}")
             return {"error": "Brak output.txt"}

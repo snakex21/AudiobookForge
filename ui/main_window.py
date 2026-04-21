@@ -165,6 +165,7 @@ TRANSLATIONS = {
         "pdf_file": "Plik PDF",
         "txt_file": "Plik TXT",
         "output_dir": "Folder wyjściowy",
+        "copy_source_to_project": "Kopiuj źródło do folderu projektu",
         "pdf_settings": "Ustawienia PDF",
         "pdf_language": "Język PDF",
         "target_language": "Język docelowy (tłumaczenie)",
@@ -337,6 +338,7 @@ TRANSLATIONS = {
         "pdf_file": "PDF File",
         "txt_file": "TXT File",
         "output_dir": "Output Folder",
+        "copy_source_to_project": "Copy source into project folder",
         "pdf_settings": "PDF Settings",
         "pdf_language": "PDF Language",
         "target_language": "Target language (translation)",
@@ -1663,6 +1665,17 @@ EXTRA_UI_TEXTS = {
         "recent_status_configured": "Skonfigurowany",
         "recent_status_in_progress": "Nieukończony",
         "recent_status_completed": "Ukończony",
+        "export_scope_title": "Zakres eksportu",
+        "export_include_config": "Dołącz config",
+        "export_include_models": "Dołącz modele Piper",
+        "export_include_sources": "Dołącz pliki źródłowe",
+        "export_include_outputs": "Dołącz pliki projektu",
+        "export_include_final": "Dołącz finalne audio/PDF",
+        "export_include_intermediate": "Dołącz pliki pośrednie",
+        "export_projects": "Projekty do eksportu",
+        "export_confirm": "Eksportuj",
+        "export_cancel": "Anuluj",
+        "autosave_enabled": "Config zapisuje się automatycznie.",
     },
     "cs": {
         "import_zip_button": "⬆ Import ZIP (config + Piper)",
@@ -1797,6 +1810,17 @@ EXTRA_UI_TEXTS = {
         "recent_status_configured": "Configured",
         "recent_status_in_progress": "Incomplete",
         "recent_status_completed": "Completed",
+        "export_scope_title": "Export scope",
+        "export_include_config": "Include config",
+        "export_include_models": "Include Piper models",
+        "export_include_sources": "Include source files",
+        "export_include_outputs": "Include project files",
+        "export_include_final": "Include final audio/PDF",
+        "export_include_intermediate": "Include intermediate files",
+        "export_projects": "Projects to export",
+        "export_confirm": "Export",
+        "export_cancel": "Cancel",
+        "autosave_enabled": "Config is saved automatically.",
     },
     "de": {
         "import_zip_button": "⬆ ZIP importieren (Config + Piper)",
@@ -2621,7 +2645,7 @@ def run_app():
         state.save()
 
     def tr(key: str) -> str:
-        return TRANSLATIONS.get(current_lang, TRANSLATIONS["en"]).get(key, key)
+        return TRANSLATIONS.get(current_lang, TRANSLATIONS["en"]).get(key, TRANSLATIONS["en"].get(key, key))
 
     def tr_runtime(key: str, *args) -> str:
         template = UI_RUNTIME_MESSAGES.get(current_lang, UI_RUNTIME_MESSAGES["en"]).get(
@@ -2697,6 +2721,45 @@ def run_app():
         root.after(50, lambda: (root.destroy(), run_app()))
 
     app_language_var.trace_add("write", change_app_language)
+
+    autosave_state = {"after_id": None, "include_recent": False, "status": None, "render_recent": False}
+    suspend_autosave = {"active": False}
+
+    def project_ready_for_recent(config: dict | None = None) -> bool:
+        current_config = config or state.config
+        source_path = (current_config.get("txt_path") or current_config.get("pdf_path") or "").strip()
+        output_dir = (current_config.get("output_dir") or "").strip()
+        return bool(source_path and output_dir)
+
+    def flush_autosave():
+        autosave_state["after_id"] = None
+        if autosave_state["include_recent"] and project_ready_for_recent():
+            remember_current_project(status=autosave_state["status"])
+        state.save()
+        if autosave_state["render_recent"]:
+            render_recent_projects()
+        autosave_state["include_recent"] = False
+        autosave_state["status"] = None
+        autosave_state["render_recent"] = False
+
+    def schedule_autosave(include_recent: bool = False, status: str | None = None, render_recent: bool = False):
+        if suspend_autosave["active"]:
+            return
+        autosave_state["include_recent"] = autosave_state["include_recent"] or include_recent
+        autosave_state["render_recent"] = autosave_state["render_recent"] or render_recent
+        if status is not None:
+            autosave_state["status"] = status
+        if autosave_state["after_id"] is not None:
+            root.after_cancel(autosave_state["after_id"])
+        autosave_state["after_id"] = root.after(400, flush_autosave)
+
+    def set_config_value(key: str, value, include_recent: bool = False, status: str | None = None, render_recent: bool = False):
+        state.config[key] = value
+        schedule_autosave(include_recent=include_recent, status=status, render_recent=render_recent)
+
+    def update_config_values(include_recent: bool = False, status: str | None = None, render_recent: bool = False, **kwargs):
+        state.config.update(kwargs)
+        schedule_autosave(include_recent=include_recent, status=status, render_recent=render_recent)
 
     content = tk.Frame(root, bg=BG)
     content.pack(fill="both", expand=True, padx=16, pady=16)
@@ -2843,7 +2906,7 @@ def run_app():
                 path = filedialog.askopenfilename(title=f"Wybierz {label}")
             if path:
                 var.set(path)
-                state.config[config_key] = path
+                set_config_value(config_key, path, include_recent=(config_key in {"output_dir", "speaker_wav"}), render_recent=(config_key == "output_dir"))
 
         tk.Button(
             row,
@@ -2855,7 +2918,7 @@ def run_app():
             cursor="hand2",
             command=pick,
         ).pack(side="left", padx=(4, 0))
-        var.trace_add("write", lambda *_: state.config.update({config_key: var.get()}))
+        var.trace_add("write", lambda *_: set_config_value(config_key, var.get(), include_recent=(config_key == "output_dir"), render_recent=(config_key == "output_dir")))
         return var
 
     source_label_var = tk.StringVar(value=tr("pdf_file"))
@@ -2890,9 +2953,9 @@ def run_app():
                 filetypes=[("txt files", "*.txt")],
             )
             if path:
-                state.config["txt_path"] = path
+                set_config_value("txt_path", path, include_recent=True)
                 suggested_output_dir = str(get_suggested_output_dir(path))
-                state.config["output_dir"] = suggested_output_dir
+                set_config_value("output_dir", suggested_output_dir, include_recent=True, render_recent=True)
                 source_var.set(path)
                 output_dir_var.set(suggested_output_dir)
         else:
@@ -2901,10 +2964,10 @@ def run_app():
                 filetypes=[("pdf files", "*.pdf")],
             )
             if path:
-                state.config["pdf_path"] = path
+                set_config_value("pdf_path", path, include_recent=True)
                 source_var.set(path)
                 suggested_output_dir = str(get_suggested_output_dir(path))
-                state.config["output_dir"] = suggested_output_dir
+                set_config_value("output_dir", suggested_output_dir, include_recent=True, render_recent=True)
                 output_dir_var.set(suggested_output_dir)
 
     tk.Button(
@@ -2920,6 +2983,19 @@ def run_app():
 
     output_dir_var = make_path_row(files_frame, tr("output_dir"), "output_dir", "folder")
 
+    copy_source_var = tk.BooleanVar(value=bool(state.config.get("copy_source_to_project", True)))
+    tk.Checkbutton(
+        files_frame,
+        text=tr("copy_source_to_project"),
+        variable=copy_source_var,
+        bg=BG,
+        fg=FG,
+        selectcolor=BG2,
+        activebackground=BG,
+        font=FONT,
+        command=lambda: set_config_value("copy_source_to_project", bool(copy_source_var.get()), include_recent=True),
+    ).pack(anchor="w", padx=8, pady=(0, 6))
+
     if not state.config.get("output_dir"):
         initial_source_path = state.config.get("txt_path") if mode_var.get() == "txt_to_audio" else state.config.get("pdf_path")
         if initial_source_path:
@@ -2934,6 +3010,7 @@ def run_app():
             state.config["txt_path"] = current_path
         else:
             state.config["pdf_path"] = current_path
+        schedule_autosave(include_recent=True, render_recent=True)
 
     source_var.trace_add("write", update_source_config)
 
@@ -2950,7 +3027,7 @@ def run_app():
         font=FONT,
     )
     lang_combo.pack(fill="x", padx=8, pady=(0, 6))
-    lang_var.trace_add("write", lambda *_: state.config.update(pdf_language=lang_var.get()))
+    lang_var.trace_add("write", lambda *_: update_config_values(pdf_language=lang_var.get(), include_recent=True))
 
     target_lang_frame = tk.Frame(lang_frame, bg=BG)
     target_lang_label = tk.Label(target_lang_frame, text=tr("target_language"), bg=BG, fg=FG_MUTED, font=FONT)
@@ -2964,7 +3041,7 @@ def run_app():
         font=FONT,
     )
     target_lang_combo.pack(fill="x", padx=8, pady=(0, 6))
-    target_lang_var.trace_add("write", lambda *_: state.config.update(target_language=target_lang_var.get()))
+    target_lang_var.trace_add("write", lambda *_: update_config_values(target_language=target_lang_var.get(), include_recent=True))
 
     extraction_section, extraction_frame = create_collapsible_section(left, "text_extraction", tr("text_extraction"))
     extraction_section.pack(fill="x", pady=(0, 8))
@@ -2980,7 +3057,7 @@ def run_app():
         selectcolor=BG2,
         activebackground=BG,
         font=FONT,
-        command=lambda: state.config.update(extraction_mode="pypdfium"),
+        command=lambda: update_config_values(extraction_mode="pypdfium", include_recent=True),
     ).pack(anchor="w", padx=16)
     tk.Radiobutton(
         extraction_frame,
@@ -2992,7 +3069,7 @@ def run_app():
         selectcolor=BG2,
         activebackground=BG,
         font=FONT,
-        command=lambda: state.config.update(extraction_mode="llm_vision"),
+        command=lambda: update_config_values(extraction_mode="llm_vision", include_recent=True),
     ).pack(anchor="w", padx=16, pady=(0, 6))
 
     tts_section, tts_frame = create_collapsible_section(left, "tts", tr("tts"))
@@ -3008,7 +3085,7 @@ def run_app():
         font=FONT,
     )
     tts_combo.pack(fill="x", padx=8, pady=(0, 4))
-    tts_var.trace_add("write", lambda *_: state.config.update(tts_provider=tts_var.get()))
+    tts_var.trace_add("write", lambda *_: update_config_values(tts_provider=tts_var.get(), include_recent=True))
 
     piper_voice_frame = tk.Frame(tts_frame, bg=BG)
     tk.Label(piper_voice_frame, text=tr("piper_voice"), bg=BG, fg=FG_MUTED, font=FONT).pack(anchor="w", padx=8, pady=(4, 0))
@@ -3023,7 +3100,7 @@ def run_app():
         font=FONT,
     )
     voice_combo.pack(side="left", fill="x", expand=True)
-    voice_var.trace_add("write", lambda *_: state.config.update(piper_voice=voice_var.get()))
+    voice_var.trace_add("write", lambda *_: update_config_values(piper_voice=voice_var.get(), include_recent=True))
 
     def scan_piper_models():
         models_dir = PROJECT_DIR / "piper_models"
@@ -3033,11 +3110,11 @@ def run_app():
             voice_combo["values"] = models
             if state.config.get("piper_voice") not in models:
                 voice_var.set(models[0])
-                state.config.update(piper_voice=models[0])
+                update_config_values(piper_voice=models[0], include_recent=True)
         else:
             voice_combo["values"] = ["brak modeli - pobierz"]
             voice_var.set("")
-            state.config.update(piper_voice="")
+            update_config_values(piper_voice="", include_recent=True)
         return models
 
     tk.Button(
@@ -3062,7 +3139,7 @@ def run_app():
         font=FONT,
     )
     edge_voice_combo.pack(fill="x", padx=8, pady=(0, 6))
-    edge_voice_var.trace_add("write", lambda *_: state.config.update(edge_voice=edge_voice_var.get()))
+    edge_voice_var.trace_add("write", lambda *_: update_config_values(edge_voice=edge_voice_var.get(), include_recent=True))
 
     piper_download_frame = tk.Frame(tts_frame, bg=BG)
     tk.Label(piper_download_frame, text=tr("piper_download_label"), bg=BG, fg=FG_MUTED, font=FONT).pack(anchor="w", padx=8, pady=(4, 0))
@@ -3075,7 +3152,7 @@ def run_app():
         font=FONT,
     )
     piper_preset_combo.pack(fill="x", padx=8, pady=(0, 6))
-    piper_preset_var.trace_add("write", lambda *_: state.config.update(piper_download_preset=piper_preset_var.get()))
+    piper_preset_var.trace_add("write", lambda *_: update_config_values(piper_download_preset=piper_preset_var.get(), include_recent=True))
 
     speaker_sample_frame = tk.Frame(tts_frame, bg=BG)
     speaker_wav_var = make_path_row(speaker_sample_frame, tr("speaker_sample"), "speaker_wav", "wav")
@@ -3134,15 +3211,16 @@ def run_app():
 
     def on_llm_provider_change(*_):
         provider = llm_provider_var.get()
-        state.config.update(llm_provider=provider)
+        update_config_values(llm_provider=provider, include_recent=True)
         if provider != "custom" and provider in LLM_URLS:
             updating_llm_url["active"] = True
             url_var.set(LLM_URLS[provider])
-            state.config.update(llm_url=url_var.get())
+            state.config["llm_url"] = url_var.get()
             updating_llm_url["active"] = False
 
     def on_llm_url_change(*_):
-        state.config.update(llm_url=url_var.get())
+        state.config["llm_url"] = url_var.get()
+        schedule_autosave(include_recent=True)
         if updating_llm_url["active"]:
             return
         provider = llm_provider_var.get()
@@ -3155,6 +3233,7 @@ def run_app():
     def update_mode(*_):
         mode = mode_var.get()
         state.config.update(mode=mode)
+        schedule_autosave(include_recent=True, render_recent=True)
         sync_source_field()
 
         lang_section.pack_forget()
@@ -3189,7 +3268,7 @@ def run_app():
         font=FONT,
     )
     model_combo.pack(fill="x", padx=8, pady=(0, 4))
-    model_var.trace_add("write", lambda *_: state.config.update(llm_model=model_var.get()))
+    model_var.trace_add("write", lambda *_: update_config_values(llm_model=model_var.get(), include_recent=True))
 
     def open_output_folder(output_path: str | Path | None = None):
         import subprocess
@@ -3203,6 +3282,7 @@ def run_app():
         if not saved_config:
             return
 
+        suspend_autosave["active"] = True
         for key, value in saved_config.items():
             state.config[key] = value
 
@@ -3219,11 +3299,14 @@ def run_app():
         llm_provider_var.set(saved_config.get("llm_provider", "lmstudio"))
         url_var.set(saved_config.get("llm_url", LLM_URLS.get(saved_config.get("llm_provider", "lmstudio"), "")))
         model_var.set(saved_config.get("llm_model", ""))
+        copy_source_var.set(bool(saved_config.get("copy_source_to_project", True)))
 
         if saved_config.get("mode") == "txt_to_audio":
             source_var.set(saved_config.get("txt_path", ""))
         else:
             source_var.set(saved_config.get("pdf_path", ""))
+
+        suspend_autosave["active"] = False
 
         persist_current_config(status=get_recent_project_status(project))
         render_recent_projects()
@@ -3375,6 +3458,62 @@ def run_app():
 
         try:
             with zipfile.ZipFile(zip_path, "r") as archive:
+                manifest = None
+                if "manifest.json" in archive.namelist():
+                    manifest = json.loads(archive.read("manifest.json").decode("utf-8"))
+
+                if manifest:
+                    models_dir = PROJECT_DIR / "piper_models"
+                    models_dir.mkdir(exist_ok=True)
+                    imported_models = 0
+                    for model_member in manifest.get("models", []):
+                        destination = models_dir / Path(model_member).name
+                        destination.write_bytes(archive.read(model_member))
+                        imported_models += 1
+
+                    imported_projects = []
+                    for project_info in manifest.get("projects", []):
+                        project_config = dict(project_info.get("config") or {})
+                        target_output_dir = resolve_output_dir(project_config.get("output_dir", project_info.get("output_dir", "")))
+                        target_output_dir.mkdir(parents=True, exist_ok=True)
+
+                        archive_root = Path(project_info.get("archive_root", ""))
+                        restored_files = 0
+                        for member in project_info.get("members", []):
+                            relative = Path(member).relative_to(archive_root / "output")
+                            destination = target_output_dir / relative
+                            destination.parent.mkdir(parents=True, exist_ok=True)
+                            destination.write_bytes(archive.read(member))
+                            restored_files += 1
+
+                        restored_source = None
+                        for source_member in project_info.get("source_members", []):
+                            relative = Path(source_member).relative_to(archive_root / "source")
+                            destination = target_output_dir / "source" / relative.name
+                            destination.parent.mkdir(parents=True, exist_ok=True)
+                            destination.write_bytes(archive.read(source_member))
+                            restored_source = destination
+
+                        if restored_source:
+                            project_config["project_source_file"] = str(restored_source)
+
+                        state.remember_recent_project(project_config, status=project_info.get("status", "configured"))
+                        imported_projects.append(project_config)
+
+                    imported_config = manifest.get("config")
+                    if imported_projects:
+                        state.config.update(imported_projects[0])
+                    elif imported_config:
+                        state.config.update(imported_config)
+
+                    state.save()
+                    messagebox.showinfo(
+                        tr_extra("import_zip_success_title"),
+                        tr_extra("import_zip_success", tr_extra("yes") if (imported_projects or imported_config) else tr_extra("no"), imported_models + len(imported_projects)),
+                    )
+                    root.after(50, lambda: (root.destroy(), run_app()))
+                    return
+
                 members = [name for name in archive.namelist() if not name.endswith("/")]
                 config_member = next(
                     (
@@ -3447,6 +3586,7 @@ def run_app():
             messagebox.showerror(tr_extra("import_zip_error_title"), str(exc))
 
     def export_zip_bundle():
+        flush_autosave()
         state.save()
         suggested_name = sanitize_job_name(Path(state.config.get("pdf_path") or state.config.get("txt_path") or "AudiobookForge").stem)
         zip_path = filedialog.asksaveasfilename(
@@ -3458,28 +3598,148 @@ def run_app():
         if not zip_path:
             return
 
-        output_dir = resolve_output_dir(state.config.get("output_dir", ""))
-        export_entries = []
+        exportable_projects = []
+        seen_output_dirs = set()
+        current_entry = state.remember_recent_project.__globals__["build_recent_project_entry"](state.config)
+        for project in ([current_entry] if current_entry else []) + state.config.get("recent_projects", []):
+            if not project:
+                continue
+            output_dir = project.get("output_dir") or project.get("config", {}).get("output_dir", "")
+            if output_dir in seen_output_dirs:
+                continue
+            seen_output_dirs.add(output_dir)
+            exportable_projects.append(project)
 
-        if CONFIG_PATH.exists():
-            export_entries.append((CONFIG_PATH, Path("config.json")))
+        dialog = tk.Toplevel(root)
+        dialog.title(tr_extra("export_scope_title"))
+        dialog.configure(bg=BG)
+        dialog.transient(root)
+        dialog.grab_set()
 
-        models_dir = PROJECT_DIR / "piper_models"
-        if models_dir.exists():
-            for model_path in sorted(models_dir.glob("*.onnx*")):
-                export_entries.append((model_path, Path("piper_models") / model_path.name))
+        include_config_var = tk.BooleanVar(value=True)
+        include_models_var = tk.BooleanVar(value=True)
+        include_sources_var = tk.BooleanVar(value=True)
+        include_outputs_var = tk.BooleanVar(value=True)
+        include_final_var = tk.BooleanVar(value=True)
+        include_intermediate_var = tk.BooleanVar(value=False)
 
-        for output_name in [
-            "output.txt",
-            "audiobook_final.mp3",
-            "output_przetlumaczony.pdf",
-            "pipeline_stats.json",
-            "job_state.json",
-            "tts_state.json",
+        for text_key, variable in [
+            ("export_include_config", include_config_var),
+            ("export_include_models", include_models_var),
+            ("export_include_sources", include_sources_var),
+            ("export_include_outputs", include_outputs_var),
+            ("export_include_final", include_final_var),
+            ("export_include_intermediate", include_intermediate_var),
         ]:
-            candidate = output_dir / output_name
-            if candidate.exists():
-                export_entries.append((candidate, Path("output") / candidate.name))
+            tk.Checkbutton(dialog, text=tr_extra(text_key), variable=variable, bg=BG, fg=FG, selectcolor=BG2, activebackground=BG, font=FONT).pack(anchor="w", padx=12, pady=2)
+
+        tk.Label(dialog, text=tr_extra("export_projects"), bg=BG, fg=FG_MUTED, font=FONT).pack(anchor="w", padx=12, pady=(8, 2))
+        project_list = tk.Listbox(dialog, selectmode="multiple", bg=BG2, fg=FG, font=FONT, height=min(8, max(1, len(exportable_projects))))
+        project_list.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+        for index, project in enumerate(exportable_projects):
+            project_list.insert("end", f"{project.get('name', 'project')} [{get_recent_project_status(project)}]")
+            project_list.selection_set(index)
+
+        selection = {"confirmed": False}
+
+        def confirm_export():
+            selection["confirmed"] = True
+            selection["selected_indices"] = list(project_list.curselection())
+            dialog.destroy()
+
+        def cancel_export():
+            dialog.destroy()
+
+        buttons = tk.Frame(dialog, bg=BG)
+        buttons.pack(fill="x", padx=12, pady=(0, 12))
+        tk.Button(buttons, text=tr_extra("export_confirm"), bg=BG2, fg=ACCENT, font=FONT, relief="flat", cursor="hand2", command=confirm_export).pack(side="left")
+        tk.Button(buttons, text=tr_extra("export_cancel"), bg=BG2, fg=FG, font=FONT, relief="flat", cursor="hand2", command=cancel_export).pack(side="left", padx=(6, 0))
+
+        root.wait_window(dialog)
+        if not selection["confirmed"]:
+            return
+
+        selected_indices = selection.get("selected_indices", [])
+        selected_projects = [exportable_projects[index] for index in selected_indices]
+
+        export_entries = []
+        manifest = {"version": 2, "projects": [], "models": [], "config": None}
+
+        if include_config_var.get() and CONFIG_PATH.exists():
+            export_entries.append((CONFIG_PATH, Path("config.json")))
+            manifest["config"] = {k: v for k, v in state.config.items() if not k.startswith("_")}
+
+        if include_models_var.get():
+            models_dir = PROJECT_DIR / "piper_models"
+            if models_dir.exists():
+                for model_path in sorted(models_dir.glob("*.onnx*")):
+                    archive_name = Path("piper_models") / model_path.name
+                    export_entries.append((model_path, archive_name))
+                    manifest["models"].append(archive_name.as_posix())
+
+        for project in selected_projects:
+            project_config = dict(project.get("config") or {})
+            project_output_dir = resolve_output_dir(project.get("output_dir") or project_config.get("output_dir", ""))
+            archive_root = Path("projects") / sanitize_job_name(project.get("name", project_output_dir.name or "project"))
+            project_members = []
+            source_members = []
+
+            if include_outputs_var.get():
+                base_output_files = ["output.txt", "pipeline_stats.json", "job_state.json", "tts_state.json", "translation_state.json"]
+                if include_final_var.get():
+                    base_output_files.extend(["audiobook_final.mp3", "output_przetlumaczony.pdf"])
+                for output_name in base_output_files:
+                    candidate = project_output_dir / output_name
+                    if candidate.exists():
+                        archive_name = archive_root / "output" / candidate.name
+                        export_entries.append((candidate, archive_name))
+                        project_members.append(archive_name.as_posix())
+
+                if include_intermediate_var.get():
+                    for folder_name in ["pages", "chunks"]:
+                        folder_path = project_output_dir / folder_name
+                        if folder_path.exists():
+                            for member_path in folder_path.rglob("*"):
+                                if member_path.is_file():
+                                    archive_name = archive_root / "output" / folder_name / member_path.relative_to(folder_path)
+                                    export_entries.append((member_path, archive_name))
+                                    project_members.append(archive_name.as_posix())
+
+            if include_sources_var.get():
+                source_candidates = [
+                    project_config.get("project_source_file"),
+                    project_config.get("pdf_path"),
+                    project_config.get("txt_path"),
+                ]
+                seen_sources = set()
+                for source_value in source_candidates:
+                    if not source_value:
+                        continue
+                    candidate = Path(source_value)
+                    if not candidate.is_absolute():
+                        candidate = PROJECT_DIR / candidate
+                    if not candidate.exists() or not candidate.is_file():
+                        continue
+                    normalized = str(candidate.resolve())
+                    if normalized in seen_sources:
+                        continue
+                    seen_sources.add(normalized)
+                    archive_name = archive_root / "source" / candidate.name
+                    export_entries.append((candidate, archive_name))
+                    source_members.append(archive_name.as_posix())
+
+            if project_members or source_members:
+                manifest["projects"].append(
+                    {
+                        "name": project.get("name", "project"),
+                        "status": get_recent_project_status(project),
+                        "output_dir": str(project_output_dir),
+                        "archive_root": archive_root.as_posix(),
+                        "config": project_config,
+                        "members": project_members,
+                        "source_members": source_members,
+                    }
+                )
 
         if not export_entries:
             messagebox.showerror(tr_extra("export_zip_error_title"), tr_extra("zip_nothing_to_export"))
@@ -3489,6 +3749,7 @@ def run_app():
             with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
                 for source_path, archive_name in export_entries:
                     archive.write(source_path, archive_name.as_posix())
+                archive.writestr("manifest.json", json.dumps(manifest, indent=2, ensure_ascii=False))
             messagebox.showinfo(
                 tr_extra("export_zip_success_title"),
                 tr_extra("export_zip_success", len(export_entries)),
@@ -3524,16 +3785,7 @@ def run_app():
 
         threading.Thread(target=download, daemon=True).start()
 
-    tk.Button(
-        btn_frame,
-        text=tr("save_config"),
-        bg=BG2,
-        fg=FG,
-        font=FONT,
-        relief="flat",
-        cursor="hand2",
-        command=lambda: (persist_current_config(status=get_recent_project_status(state.config)), render_recent_projects(), log(tr_runtime("config_saved"))),
-    ).pack(fill="x", pady=2)
+    tk.Label(btn_frame, text=tr_extra("autosave_enabled"), bg=BG, fg=FG_MUTED, font=FONT, anchor="w", justify="left").pack(fill="x", pady=(0, 4))
 
     tk.Button(
         btn_frame,
