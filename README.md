@@ -15,6 +15,7 @@ Open-source desktop tooling for local-first audiobook generation from PDFs and T
 - `LLM Vision OCR` fallback for scanned or badly encoded PDFs
 - `Piper`, `Edge TTS`, `Chatterbox`, `OpenAI TTS`, `ElevenLabs`
 - multilingual desktop UI with runtime language switching
+- current UI languages: Polish, Czech, Romanian, Hungarian, English, German, French, Spanish, Italian, Russian, Ukrainian, Turkish, Portuguese, Dutch, Swedish, Finnish, Danish, Norwegian
 - built-in Piper model download workflow
 - robust handling of legacy PDFs with broken encoding and OCR fallback
 
@@ -95,6 +96,7 @@ Requirements for installer build:
 
 - Inno Setup 6 installed
 - `ISCC.exe` available in `PATH`, or installed in the default Inno Setup folder
+- installer languages include English, Polish, Czech, Hungarian, Finnish, Danish, Norwegian, German, French, Spanish, Italian, Russian, Ukrainian, Turkish, Portuguese, Dutch, and Swedish
 
 Manual PyInstaller example:
 
@@ -287,10 +289,18 @@ Języki interfejsu:
 - Русский
 - Українська
 - Čeština
+- Romana
+- Magyar
 - Français
 - Español
 - Italiano
 - Türkçe
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
 
 Języki docelowe audio / tłumaczenia:
 - `pol`
@@ -442,10 +452,18 @@ UI languages:
 - Russian
 - Ukrainian
 - Czech
+- Romanian
+- Hungarian
 - French
 - Spanish
 - Italian
 - Turkish
+- Portuguese
+- Dutch
+- Swedish
+- Finnish
+- Danish
+- Norwegian
 
 Audio / translation target languages:
 - `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
@@ -574,10 +592,18 @@ UI-Sprachen:
 - Русский
 - Українська
 - Čeština
+- Romana
+- Magyar
 - Français
 - Español
 - Italiano
 - Türkçe
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
 
 Zielsprachen fur Audio / Ubersetzung:
 - `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
@@ -704,10 +730,18 @@ pyinstaller --onedir --windowed --name AudiobookForge app.py
 - Русский
 - Українська
 - Čeština
+- Romana
+- Magyar
 - Français
 - Español
 - Italiano
 - Türkçe
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
 
 Языки аудио / перевода:
 - `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
@@ -832,10 +866,18 @@ pyinstaller --onedir --windowed --name AudiobookForge app.py
 - Русский
 - Українська
 - Čeština
+- Romana
+- Magyar
 - Français
 - Español
 - Italiano
 - Türkçe
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
 
 Мови аудіо / перекладу:
 - `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
@@ -960,10 +1002,18 @@ Jazyky rozhrani:
 - Русский
 - Українська
 - Čeština
+- Romana
+- Magyar
 - Français
 - Español
 - Italiano
 - Türkçe
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
 
 Jazyky audia / prekladu:
 - `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
@@ -1088,10 +1138,18 @@ Langues de l'interface:
 - Русский
 - Українська
 - Čeština
+- Romana
+- Magyar
 - Français
 - Español
 - Italiano
 - Türkçe
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
 
 Langues cible audio / traduction:
 - `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
@@ -1216,10 +1274,18 @@ Idiomas de la interfaz:
 - Русский
 - Українська
 - Čeština
+- Romana
+- Magyar
 - Français
 - Español
 - Italiano
 - Türkçe
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
 
 Idiomas de audio / traduccion:
 - `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
@@ -1344,10 +1410,18 @@ Lingue UI:
 - Русский
 - Українська
 - Čeština
+- Romana
+- Magyar
 - Français
 - Español
 - Italiano
 - Türkçe
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
 
 Lingue audio / traduzione:
 - `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
@@ -1474,10 +1548,18 @@ Arayuz dilleri:
 - Русский
 - Українська
 - Čeština
+- Romana
+- Magyar
 - Français
 - Español
 - Italiano
 - Türkçe
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
 
 Ses / ceviri hedef dilleri:
 - `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
