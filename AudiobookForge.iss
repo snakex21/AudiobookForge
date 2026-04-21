@@ -30,6 +30,10 @@ LanguageDetectionMethod=uilanguage
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "polish"; MessagesFile: "compiler:Languages\Polish.isl"
 Name: "czech"; MessagesFile: "compiler:Languages\Czech.isl"
+Name: "hungarian"; MessagesFile: "compiler:Languages\Hungarian.isl"
+Name: "finnish"; MessagesFile: "compiler:Languages\Finnish.isl"
+Name: "danish"; MessagesFile: "compiler:Languages\Danish.isl"
+Name: "norwegian"; MessagesFile: "compiler:Languages\Norwegian.isl"
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
@@ -73,6 +77,22 @@ polish.LaunchProgram=Uruchom %1
 czech.CreateDesktopShortcut=Vytvořit zástupce na ploše
 czech.AdditionalIcons=Další ikony:
 czech.LaunchProgram=Spustit %1
+
+hungarian.CreateDesktopShortcut=Asztali parancsikon letrehozasa
+hungarian.AdditionalIcons=Tovabbi ikonok:
+hungarian.LaunchProgram=%1 inditasa
+
+finnish.CreateDesktopShortcut=Luo pikakuvake tyopoydalle
+finnish.AdditionalIcons=Lisakuvakkeet:
+finnish.LaunchProgram=Kaynnista %1
+
+danish.CreateDesktopShortcut=Opret genvej pa skrivebordet
+danish.AdditionalIcons=Yderligere ikoner:
+danish.LaunchProgram=Start %1
+
+norwegian.CreateDesktopShortcut=Opprett snarvei pa skrivebordet
+norwegian.AdditionalIcons=Ekstra ikoner:
+norwegian.LaunchProgram=Start %1
 
 german.CreateDesktopShortcut=Desktopverknüpfung erstellen
 german.AdditionalIcons=Zusätzliche Symbole:
