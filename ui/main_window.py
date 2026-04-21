@@ -11,8 +11,79 @@ import traceback
 import time
 import json
 import zipfile
-from pipeline import run_pipeline, list_llm_models, LLM_URLS, build_job_signature
+from pipeline import run_pipeline, list_llm_models, LLM_URLS, build_job_signature, LANGUAGE_NAMES
 from ui.state import state, PROJECT_DIR, RESOURCE_DIR, CONFIG_PATH
+
+
+def normalize_app_lang_code(app_lang: str) -> str:
+    """Normalize mixed UI language codes to the keys used by the UI translations."""
+    mapping = {
+        "pl": "pl", "pol": "pl",
+        "en": "en", "eng": "en",
+        "de": "de", "deu": "de",
+        "ru": "ru", "rus": "ru",
+        "cs": "cs", "ces": "cs",
+        "sk": "slk", "slk": "slk",
+        "uk": "uk", "ukr": "uk",
+        "fr": "fr", "fra": "fr",
+        "es": "es", "spa": "es",
+        "it": "it", "ita": "it",
+        "pt": "pt", "por": "pt",
+        "nl": "nl", "nld": "nl",
+        "hu": "hu", "hun": "hu",
+        "ro": "ro", "ron": "ro",
+        "bg": "bg", "bul": "bg",
+        "sl": "slv", "slv": "slv",
+        "hr": "hrv", "hrv": "hrv",
+        "sr": "srp", "srp": "srp",
+        "lt": "lit", "lit": "lit",
+        "lv": "lav", "lav": "lav",
+        "et": "est", "est": "est",
+        "fi": "fi", "fin": "fi",
+        "sv": "sv", "swe": "sv",
+        "da": "da", "dan": "da",
+        "no": "no", "nor": "no",
+        "tr": "tr", "tur": "tr",
+        "ca": "cat", "cat": "cat",
+        "af": "af",
+        "sw": "sw",
+    }
+    return mapping.get((app_lang or "").lower(), "en")
+
+
+def app_lang_to_iso(app_lang):
+    """Convert UI language code (pl, en, de...) to ISO code (pol, eng, deu...)."""
+    mapping = {
+        "pl": "pol", "en": "eng", "de": "deu", "ru": "rus", "cs": "ces",
+        "slk": "slk", "uk": "ukr", "fr": "fra", "es": "spa", "it": "ita",
+        "pt": "por", "nl": "nld", "hu": "hun", "ro": "ron", "bg": "bul",
+        "slv": "slv", "hrv": "hrv", "srp": "srp", "lit": "lit", "lav": "lav",
+        "est": "est", "fi": "fin", "sv": "swe", "da": "dan", "no": "nor",
+        "tr": "tur", "cat": "cat", "af": "af", "sw": "sw",
+    }
+    return mapping.get(normalize_app_lang_code(app_lang), "eng")
+
+
+def get_labeled_languages(ui_lang, language_codes=None):
+    """Return list of (localized_name, iso_code) tuples for language dropdowns."""
+    names = LANGUAGE_NAMES.get(ui_lang, LANGUAGE_NAMES["eng"])
+    all_codes = language_codes or PDF_LANGUAGES
+    return [(names.get(code, code), code) for code in all_codes]
+
+
+def labeled_to_iso(display_name):
+    """Convert displayed language name back to ISO code."""
+    ui_lang = normalize_app_lang_code(state.config.get("app_language", "pl"))
+    iso_lang = app_lang_to_iso(ui_lang)
+    labeled = get_labeled_languages(iso_lang)
+    for name, code in labeled:
+        if name == display_name:
+            return code
+    return display_name  # fallback - already an ISO code
+
+
+def get_localized_ui_language_options(app_lang: str):
+    return UI_LANGUAGE_OPTIONS
 
 
 BG = "#0d1117"
@@ -102,29 +173,29 @@ PDF_LANGUAGES = [
 TARGET_LANGUAGES = ["pol", "eng", "rus", "deu", "fra", "ces", "ukr", "spa", "ita", "por", "nld", "hun", "ron", "fin", "swe", "dan", "nor", "tur", "slk", "slv", "hrv", "cat", "af", "sw", "est", "lav", "lit"]
 UI_LANGUAGE_OPTIONS = [
     ("Polski", "pl"),
-    ("Cesky", "cs"),
-    ("Slovencina", "slk"),
-    ("Slovenscina", "slv"),
+    ("Čeština", "cs"),
+    ("Slovenčina", "slk"),
+    ("Slovenščina", "slv"),
     ("Hrvatski", "hrv"),
-    ("Romana", "ro"),
+    ("Română", "ro"),
     ("Magyar", "hu"),
     ("English", "en"),
     ("Deutsch", "de"),
-    ("Francais", "fr"),
-    ("Espanol", "es"),
+    ("Français", "fr"),
+    ("Español", "es"),
     ("Italiano", "it"),
-    ("Russkiy", "ru"),
-    ("Ukrainska", "uk"),
-    ("Turkce", "tr"),
-    ("Catala", "cat"),
+    ("Русский", "ru"),
+    ("Українська", "uk"),
+    ("Türkçe", "tr"),
+    ("Català", "cat"),
     ("Afrikaans", "af"),
     ("Kiswahili", "sw"),
-    ("Portugues", "pt"),
+    ("Português", "pt"),
     ("Nederlands", "nl"),
     ("Svenska", "sv"),
     ("Eesti", "est"),
-    ("Latviesu", "lav"),
-    ("Lietuviu", "lit"),
+    ("Latviešu", "lav"),
+    ("Lietuvių", "lit"),
     ("Suomi", "fi"),
     ("Dansk", "da"),
     ("Norsk", "no"),
@@ -203,6 +274,8 @@ TRANSLATIONS = {
     "pl": {
         "app_title": "AUDIOBOOK FORGE v1.0",
         "ui_language": "Język UI",
+        "language_legend": "Legenda",
+        "language_legend_title": "Legenda języków",
         "work_mode": "Tryb pracy",
         "mode_pdf_audio": "PDF → Audio",
         "mode_translate_audio": "PDF → Tłumaczenie → Audio",
@@ -379,6 +452,8 @@ TRANSLATIONS = {
     "en": {
         "app_title": "AUDIOBOOK FORGE v1.0",
         "ui_language": "UI Language",
+        "language_legend": "Legend",
+        "language_legend_title": "Language legend",
         "work_mode": "Work Mode",
         "mode_pdf_audio": "PDF → Audio",
         "mode_translate_audio": "PDF → Translation → Audio",
@@ -809,7 +884,7 @@ TRANSLATIONS = {
     },
     "sv": {
         "app_title": "AUDIOBOOK FORGE v1.0",
-        "ui_language": "UI-sprak",
+        "ui_language": "UI-språk",
         "work_mode": "Arbetslage",
         "mode_pdf_audio": "PDF → Audio",
         "mode_translate_audio": "PDF → Oversattning → Audio",
@@ -855,8 +930,8 @@ TRANSLATIONS = {
         "ui_language": "UI-kieli",
         "work_mode": "Tyotila",
         "mode_pdf_audio": "PDF → Audio",
-        "mode_translate_audio": "PDF → Kaannos → Audio",
-        "mode_translate_txt": "PDF → Kaannos → TXT",
+        "mode_translate_audio": "PDF → Käännös → Audio",
+        "mode_translate_txt": "PDF → Käännös → TXT",
         "mode_txt_audio": "TXT → Audio (olemassa oleva output.txt)",
         "source_files": "Lahdetiedostot",
         "pdf_file": "PDF-tiedosto",
@@ -864,7 +939,7 @@ TRANSLATIONS = {
         "output_dir": "Tulostekansio",
         "pdf_settings": "PDF-asetukset",
         "pdf_language": "PDF-kieli",
-        "target_language": "Kohdekieli (kaannos)",
+        "target_language": "Kohdekieli (käännös)",
         "text_extraction": "Tekstin poiminta",
         "extract_fast": "pypdfium2 (nopea)",
         "extract_vision": "LLM Vision OCR (vaikeille PDF-tiedostoille)",
@@ -873,21 +948,21 @@ TRANSLATIONS = {
         "piper_voice": "Piper-aani",
         "edge_voice": "Edge TTS -aani",
         "speaker_sample": "Aaninayte (WAV)",
-        "llm": "LLM (Kaannos)",
+        "llm": "LLM (Käännös)",
         "url": "URL",
         "model": "Malli",
         "scan_models": "Skannaa LLM-mallit",
         "piper_download_label": "Ladattava Piper-malli",
         "save_config": "Tallenna config",
         "download_piper": "⬇ Lataa Piper-malli",
-        "run_pipeline": "▶  KAYNNISTA PIPELINE",
+        "run_pipeline": "▶  KÄYNNISTÄ PIPELINE",
         "pause": "⏸ Tauko",
         "resume": "▶ Jatka",
         "stop": "⏹ Stop",
         "open_folder": "📂 Avaa kansio",
         "ready": "● VALMIS",
         "progress": "Edistyminen",
-        "progress_translation": "Poiminta / Kaannos",
+        "progress_translation": "Poiminta / Käännös",
         "progress_audio": "Audio",
         "progress_merge": "Yhdistaminen",
         "console": "Konsoli",
@@ -907,7 +982,7 @@ TRANSLATIONS = {
         "output_dir": "Outputmappe",
         "pdf_settings": "PDF-indstillinger",
         "pdf_language": "PDF-sprog",
-        "target_language": "Malsprog (oversaettelse)",
+        "target_language": "Målsprog (oversættelse)",
         "text_extraction": "Tekstudtraek",
         "extract_fast": "pypdfium2 (hurtig)",
         "extract_vision": "LLM Vision OCR (til svaere PDF-filer)",
@@ -938,7 +1013,7 @@ TRANSLATIONS = {
     },
     "no": {
         "app_title": "AUDIOBOOK FORGE v1.0",
-        "ui_language": "UI-sprak",
+        "ui_language": "UI-språk",
         "work_mode": "Arbeidsmodus",
         "mode_pdf_audio": "PDF → Audio",
         "mode_translate_audio": "PDF → Oversettelse → Audio",
@@ -950,7 +1025,7 @@ TRANSLATIONS = {
         "output_dir": "Utdatamappe",
         "pdf_settings": "PDF-innstillinger",
         "pdf_language": "PDF-sprak",
-        "target_language": "Malsprak (oversettelse)",
+        "target_language": "Målspråk (oversettelse)",
         "text_extraction": "Tekstuttrekk",
         "extract_fast": "pypdfium2 (rask)",
         "extract_vision": "LLM Vision OCR (for vanskelige PDF-er)",
@@ -970,12 +1045,12 @@ TRANSLATIONS = {
         "pause": "⏸ Pause",
         "resume": "▶ Fortsett",
         "stop": "⏹ Stop",
-        "open_folder": "📂 Aapne mappe",
+        "open_folder": "📂 Åpne mappe",
         "ready": "● KLAR",
         "progress": "Fremdrift",
         "progress_translation": "Uttrekk / Oversettelse",
         "progress_audio": "Audio",
-        "progress_merge": "Sammenslaing",
+        "progress_merge": "Sammenslåing",
         "console": "Konsoll",
         "recent_projects": "Siste prosjekter",
     },
@@ -2297,7 +2372,7 @@ EXTRA_UI_TEXTS = {
         "no": "nei",
         "recent_empty": "Ingen siste prosjekter ennå.",
         "recent_load": "Last inn",
-        "recent_open": "Aapne",
+        "recent_open": "Åpne",
         "recent_source": "Kilde: {}",
         "recent_output": "Utdata: {}",
         "recent_status_configured": "Konfigurert",
@@ -2623,8 +2698,7 @@ EXTRA_UI_TEXTS = {
 
 
 def run_app():
-    current_lang = state.config.get("app_language", "pl")
-
+    current_lang = normalize_app_lang_code(state.config.get("app_language", "pl"))
     def sanitize_job_name(name: str) -> str:
         cleaned = re.sub(r'[<>:"/\\|?*]+', '_', name).strip().strip('.')
         return cleaned or "job"
@@ -2752,21 +2826,22 @@ def run_app():
 
     tk.Label(topbar, text=tr("ui_language"), bg="#0a0f15", fg=FG_MUTED, font=FONT).pack(side="right", padx=(8, 8))
     app_language_var = tk.StringVar(value=current_lang)
+    localized_ui_language_options = get_localized_ui_language_options(current_lang)
     app_language_combo = ttk.Combobox(
         topbar,
         textvariable=app_language_var,
         state="readonly",
-        values=[label for label, _ in UI_LANGUAGE_OPTIONS],
+        values=[label for label, _ in localized_ui_language_options],
         font=FONT,
         width=14,
     )
     app_language_combo.pack(side="right", padx=(0, 16))
-    current_label = next((label for label, code in UI_LANGUAGE_OPTIONS if code == current_lang), "English")
+    current_label = next((label for label, code in localized_ui_language_options if code == current_lang), "English")
     app_language_var.set(current_label)
 
     def change_app_language(*_):
         selected = app_language_var.get()
-        code = next((code for label, code in UI_LANGUAGE_OPTIONS if label == selected), current_lang)
+        code = next((code for label, code in localized_ui_language_options if label == selected), current_lang)
         if code == state.config.get("app_language"):
             return
         state.config["app_language"] = code
@@ -3071,30 +3146,50 @@ def run_app():
     lang_section.pack(fill="x", pady=(0, 8))
 
     tk.Label(lang_frame, text=tr("pdf_language"), bg=BG, fg=FG_MUTED, font=FONT).pack(anchor="w", padx=8, pady=(6, 0))
-    lang_var = tk.StringVar(value=state.config.get("pdf_language", "pol"))
+
     lang_combo = ttk.Combobox(
         lang_frame,
-        textvariable=lang_var,
         state="readonly",
-        values=PDF_LANGUAGES,
         font=FONT,
     )
     lang_combo.pack(fill="x", padx=8, pady=(0, 6))
-    lang_var.trace_add("write", lambda *_: update_config_values(pdf_language=lang_var.get(), include_recent=True))
+
+    def update_pdf_lang_options(*_):
+        ui_lang = state.config.get("app_language", "pl")
+        iso_lang = app_lang_to_iso(ui_lang)
+        labeled = get_labeled_languages(iso_lang, PDF_LANGUAGES)
+        lang_combo["values"] = [name for name, code in labeled]
+        current_code = state.config.get("pdf_language", "pol")
+        current_name = next((name for name, code in labeled if code == current_code), current_code)
+        lang_combo.set(current_name)
+
+    update_pdf_lang_options()
+    lang_combo.bind("<<ComboboxSelected>>", lambda *_: (update_config_values(pdf_language=labeled_to_iso(lang_combo.get()), include_recent=True),))
 
     target_lang_frame = tk.Frame(lang_frame, bg=BG)
     target_lang_label = tk.Label(target_lang_frame, text=tr("target_language"), bg=BG, fg=FG_MUTED, font=FONT)
     target_lang_label.pack(anchor="w", padx=8)
-    target_lang_var = tk.StringVar(value=state.config.get("target_language", "pol"))
+
     target_lang_combo = ttk.Combobox(
         target_lang_frame,
-        textvariable=target_lang_var,
         state="readonly",
-        values=TARGET_LANGUAGES,
         font=FONT,
     )
     target_lang_combo.pack(fill="x", padx=8, pady=(0, 6))
-    target_lang_var.trace_add("write", lambda *_: update_config_values(target_language=target_lang_var.get(), include_recent=True))
+
+    def update_target_lang_options(*_):
+        ui_lang = state.config.get("app_language", "pl")
+        iso_lang = app_lang_to_iso(ui_lang)
+        labeled = get_labeled_languages(iso_lang, TARGET_LANGUAGES)
+        target_lang_combo["values"] = [name for name, code in labeled]
+        current_code = state.config.get("target_language", "pol")
+        current_name = next((name for name, code in labeled if code == current_code), current_code)
+        target_lang_combo.set(current_name)
+
+    update_target_lang_options()
+    state.config.get("app_language", "pl")  # dummy - trace on app_language change
+    target_lang_combo.bind("<<ComboboxSelected>>", lambda *_: update_config_values(target_language=labeled_to_iso(target_lang_combo.get()), include_recent=True))
+    target_lang_combo.pack(fill="x", padx=8, pady=(0, 6))
 
     extraction_section, extraction_frame = create_collapsible_section(left, "text_extraction", tr("text_extraction"))
     extraction_section.pack(fill="x", pady=(0, 8))
@@ -3388,8 +3483,17 @@ def run_app():
 
         mode_var.set(saved_config.get("mode", "pdf_to_audio"))
         output_dir_var.set(saved_config.get("output_dir", ""))
-        lang_var.set(saved_config.get("pdf_language", "pol"))
-        target_lang_var.set(saved_config.get("target_language", "pol"))
+
+        def restore_lang_combo(combo, config_key):
+            code = saved_config.get(config_key, "pol")
+            ui_lang = state.config.get("app_language", "pl")
+            iso_lang = app_lang_to_iso(ui_lang)
+            labeled = get_labeled_languages(iso_lang, PDF_LANGUAGES if config_key == "pdf_language" else TARGET_LANGUAGES)
+            name = next((n for n, c in labeled if c == code), code)
+            combo.set(name)
+
+        restore_lang_combo(lang_combo, "pdf_language")
+        restore_lang_combo(target_lang_combo, "target_language")
         ocr_var.set(saved_config.get("extraction_mode", "pypdfium"))
         tts_var.set(saved_config.get("tts_provider", "piper"))
         voice_var.set(saved_config.get("piper_voice", state.config.get("piper_voice", "")))

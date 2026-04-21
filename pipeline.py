@@ -83,33 +83,296 @@ AUDIO_LANGUAGE_SETTINGS = {
     "lit": {"language_code": "lt", "edge_voice": "lt-LT-OnaNeural"},
 }
 LANGUAGE_NAMES = {
-    "pol": "polski",
-    "eng": "angielski",
-    "deu": "niemiecki",
-    "rus": "rosyjski",
-    "fra": "francuski",
-    "ces": "czeski",
-    "ukr": "ukraiński",
-    "spa": "hiszpański",
-    "ita": "włoski",
-    "por": "portugalski",
-    "nld": "holenderski",
-    "hun": "węgierski",
-    "ron": "rumuński",
-    "fin": "fiński",
-    "swe": "szwedzki",
-    "dan": "duński",
-    "nor": "norweski",
-    "tur": "turecki",
-    "slk": "słowacki",
-    "slv": "słoweński",
-    "hrv": "chorwacki",
-    "cat": "kataloński",
-    "af": "afrikaans",
-    "sw": "suahili",
-    "est": "estoński",
-    "lav": "łotewski",
-    "lit": "litewski",
+    # Polish translations
+    "pol": {
+        "pol": "Polski", "eng": "Angielski", "deu": "Niemiecki", "rus": "Rosyjski",
+        "ces": "Czeski", "slk": "Słowacki", "ukr": "Ukraiński", "fra": "Francuski",
+        "spa": "Hiszpański", "ita": "Włoski", "por": "Portugalski", "nld": "Holenderski",
+        "hun": "Węgierski", "ron": "Rumuński", "bul": "Bułgarski", "slv": "Słoweński",
+        "hrv": "Chorwacki", "srp": "Serbski", "lit": "Litewski", "lav": "Łotewski",
+        "est": "Estoński", "fin": "Fiński", "swe": "Szwedzki", "dan": "Duński",
+        "nor": "Norweski", "tur": "Turecki", "cat": "Kataloński", "af": "Afrikaans", "sw": "Suahili",
+    },
+    # English translations
+    "eng": {
+        "pol": "Polish", "eng": "English", "deu": "German", "rus": "Russian",
+        "ces": "Czech", "slk": "Slovak", "ukr": "Ukrainian", "fra": "French",
+        "spa": "Spanish", "ita": "Italian", "por": "Portuguese", "nld": "Dutch",
+        "hun": "Hungarian", "ron": "Romanian", "bul": "Bulgarian", "slv": "Slovenian",
+        "hrv": "Croatian", "srp": "Serbian", "lit": "Lithuanian", "lav": "Latvian",
+        "est": "Estonian", "fin": "Finnish", "swe": "Swedish", "dan": "Danish",
+        "nor": "Norwegian", "tur": "Turkish", "cat": "Catalan", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Deutsch translations
+    "deu": {
+        "pol": "Polnisch", "eng": "Englisch", "deu": "Deutsch", "rus": "Russisch",
+        "ces": "Tschechisch", "slk": "Slowakisch", "ukr": "Ukrainisch", "fra": "Französisch",
+        "spa": "Spanisch", "ita": "Italienisch", "por": "Portugiesisch", "nld": "Niederländisch",
+        "hun": "Ungarisch", "ron": "Rumänisch", "bul": "Bulgarisch", "slv": "Slowenisch",
+        "hrv": "Kroatisch", "srp": "Serbisch", "lit": "Litauisch", "lav": "Lettisch",
+        "est": "Estnisch", "fin": "Finnisch", "swe": "Schwedisch", "dan": "Dänisch",
+        "nor": "Norwegisch", "tur": "Türkisch", "cat": "Katalanisch", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Русский translations
+    "rus": {
+        "pol": "Польский", "eng": "Английский", "deu": "Немецкий", "rus": "Русский",
+        "ces": "Чешский", "slk": "Словацкий", "ukr": "Украинский", "fra": "Французский",
+        "spa": "Испанский", "ita": "Итальянский", "por": "Португальский", "nld": "Нидерландский",
+        "hun": "Венгерский", "ron": "Румынский", "bul": "Болгарский", "slv": "Словенский",
+        "hrv": "Хорватский", "srp": "Сербский", "lit": "Литовский", "lav": "Латышский",
+        "est": "Эстонский", "fin": "Финский", "swe": "Шведский", "dan": "Датский",
+        "nor": "Норвежский", "tur": "Турецкий", "cat": "Каталанский", "af": "Африкаанс", "sw": "Суахили",
+    },
+    # Čeština translations
+    "ces": {
+        "pol": "Polský", "eng": "Anglický", "deu": "Německý", "rus": "Ruský",
+        "ces": "Čeština", "slk": "Slovenský", "ukr": "Ukrajinský", "fra": "Francouzský",
+        "spa": "Španělský", "ita": "Italský", "por": "Portugalský", "nld": "Nizozemský",
+        "hun": "Maďarský", "ron": "Rumunský", "bul": "Bulharský", "slv": "Slovinský",
+        "hrv": "Chorvatský", "srp": "Srbský", "lit": "Litevský", "lav": "Lotyšský",
+        "est": "Estonský", "fin": "Finský", "swe": "Švédský", "dan": "Dánský",
+        "nor": "Norský", "tur": "Turecký", "cat": "Katalánský", "af": "Afrikánština", "sw": "Svahilština",
+    },
+    # Slovenčina translations
+    "slk": {
+        "pol": "Poľský", "eng": "Anglický", "deu": "Nemecký", "rus": "Ruský",
+        "ces": "Český", "slk": "Slovenský", "ukr": "Ukrajinský", "fra": "Francúzsky",
+        "spa": "Španielsky", "ita": "Taliansky", "por": "Portugalský", "nld": "Holandský",
+        "hun": "Maďarský", "ron": "Rumunský", "bul": "Bulhársky", "slv": "Slovinský",
+        "hrv": "Chorvátsky", "srp": "Srbský", "lit": "Litovský", "lav": "Lotyšský",
+        "est": "Estónsky", "fin": "Fínsky", "swe": "Švédsky", "dan": "Dánsky",
+        "nor": "Nórsky", "tur": "Turecký", "cat": "Katalánsky", "af": "Afrikánčina", "sw": "Svahilčina",
+    },
+    # Українська translations
+    "ukr": {
+        "pol": "Польський", "eng": "Англійська", "deu": "Німецька", "rus": "Російська",
+        "ces": "Чеський", "slk": "Словацький", "ukr": "Українська", "fra": "Французька",
+        "spa": "Іспанська", "ita": "Італійська", "por": "Португальська", "nld": "Нідерландська",
+        "hun": "Угорська", "ron": "Румунська", "bul": "Болгарська", "slv": "Словенська",
+        "hrv": "Хорватська", "srp": "Сербська", "lit": "Литовська", "lav": "Латвійська",
+        "est": "Естонська", "fin": "Фінська", "swe": "Шведська", "dan": "Датська",
+        "nor": "Норвезька", "tur": "Турецька", "cat": "Каталонська", "af": "Африкаанс", "sw": "Суахілі",
+    },
+    # Français translations
+    "fra": {
+        "pol": "Polonais", "eng": "Anglais", "deu": "Allemand", "rus": "Russe",
+        "ces": "Tchèque", "slk": "Slovaque", "ukr": "Ukrainien", "fra": "Français",
+        "spa": "Espagnol", "ita": "Italien", "por": "Portugais", "nld": "Néerlandais",
+        "hun": "Hongrois", "ron": "Roumain", "bul": "Bulgare", "slv": "Slovène",
+        "hrv": "Croate", "srp": "Serbe", "lit": "Lituanien", "lav": "Letton",
+        "est": "Estonien", "fin": "Finnois", "swe": "Suédois", "dan": "Danois",
+        "nor": "Norvégien", "tur": "Turc", "cat": "Catalan", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Español translations
+    "spa": {
+        "pol": "Polaco", "eng": "Inglés", "deu": "Alemán", "rus": "Ruso",
+        "ces": "Checo", "slk": "Eslovaco", "ukr": "Ucraniano", "fra": "Francés",
+        "spa": "Español", "ita": "Italiano", "por": "Portugués", "nld": "Neerlandés",
+        "hun": "Húngaro", "ron": "Rumano", "bul": "Búlgaro", "slv": "Esloveno",
+        "hrv": "Croata", "srp": "Serbio", "lit": "Lituano", "lav": "Letón",
+        "est": "Estonio", "fin": "Finés", "swe": "Sueco", "dan": "Danés",
+        "nor": "Noruego", "tur": "Turco", "cat": "Catalán", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Italiano translations
+    "ita": {
+        "pol": "Polacco", "eng": "Inglese", "deu": "Tedesco", "rus": "Russo",
+        "ces": "Ceco", "slk": "Slovacco", "ukr": "Ucraino", "fra": "Francese",
+        "spa": "Spagnolo", "ita": "Italiano", "por": "Portoghese", "nld": "Olandese",
+        "hun": "Ungherese", "ron": "Rumeno", "bul": "Bulgaro", "slv": "Sloveno",
+        "hrv": "Croato", "srp": "Serbo", "lit": "Lituano", "lav": "Latviano",
+        "est": "Estone", "fin": "Finlandese", "swe": "Svedese", "dan": "Danese",
+        "nor": "Norvegese", "tur": "Turco", "cat": "Catalano", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Português translations
+    "por": {
+        "pol": "Polonês", "eng": "Inglês", "deu": "Alemão", "rus": "Russo",
+        "ces": "Tcheco", "slk": "Eslovaco", "ukr": "Ucraniano", "fra": "Francês",
+        "spa": "Espanhol", "ita": "Italiano", "por": "Português", "nld": "Holandês",
+        "hun": "Húngaro", "ron": "Romeno", "bul": "Búlgaro", "slv": "Esloveno",
+        "hrv": "Croata", "srp": "Sérvio", "lit": "Lituano", "lav": "Letão",
+        "est": "Estoniano", "fin": "Finlandês", "swe": "Sueco", "dan": "Dinamarquês",
+        "nor": "Norueguês", "tur": "Turco", "cat": "Catalão", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Nederlands translations
+    "nld": {
+        "pol": "Pools", "eng": "Engels", "deu": "Duits", "rus": "Russisch",
+        "ces": "Tsjechisch", "slk": "Slowaaks", "ukr": "Oekraïens", "fra": "Frans",
+        "spa": "Spaans", "ita": "Italiaans", "por": "Portugees", "nld": "Nederlands",
+        "hun": "Hongaars", "ron": "Roemeens", "bul": "Bulgaars", "slv": "Sloveens",
+        "hrv": "Kroatisch", "srp": "Servisch", "lit": "Litouws", "lav": "Letlands",
+        "est": "Estlands", "fin": "Fins", "swe": "Zweeds", "dan": "Deens",
+        "nor": "Noors", "tur": "Turks", "cat": "Catalaans", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Magyar translations
+    "hun": {
+        "pol": "Lengyel", "eng": "Angol", "deu": "Német", "rus": "Orosz",
+        "ces": "Cseh", "slk": "Szlovák", "ukr": "Ukrán", "fra": "Francia",
+        "spa": "Spanyol", "ita": "Olasz", "por": "Portugál", "nld": "Holland",
+        "hun": "Magyar", "ron": "Román", "bul": "Bolgár", "slv": "Szlovén",
+        "hrv": "Horvát", "srp": "Szerb", "lit": "Litván", "lav": "Lett",
+        "est": "Észt", "fin": "Finn", "swe": "Svéd", "dan": "Dán",
+        "nor": "Norvég", "tur": "Török", "cat": "Katalán", "af": "Afrikaans", "sw": "Szuahéli",
+    },
+    # Română translations
+    "ron": {
+        "pol": "Poloneză", "eng": "Engleză", "deu": "Germană", "rus": "Rusă",
+        "ces": "Cehă", "slk": "Slovacă", "ukr": "Ucraineană", "fra": "Franceză",
+        "spa": "Spaniolă", "ita": "Italiană", "por": "Portugheză", "nld": "Olandeză",
+        "hun": "Maghiară", "ron": "Română", "bul": "Bulgară", "slv": "Slovenă",
+        "hrv": "Croată", "srp": "Sârbă", "lit": "Lituaniană", "lav": "Latviană",
+        "est": "Estoniană", "fin": "Finlandeză", "swe": "Suedeză", "dan": "Daneză",
+        "nor": "Norvegiană", "tur": "Turcă", "cat": "Catalană", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Български translations
+    "bul": {
+        "pol": "Полски", "eng": "Английски", "deu": "Немски", "rus": "Руски",
+        "ces": "Чешки", "slk": "Словашки", "ukr": "Украински", "fra": "Френски",
+        "spa": "Испански", "ita": "Италиански", "por": "Португалски", "nld": "Нидерландски",
+        "hun": "Унгарски", "ron": "Румънский", "bul": "Български", "slv": "Словенски",
+        "hrv": "Хърватски", "srp": "Сръбски", "lit": "Литовски", "lav": "Латвийски",
+        "est": "Естонски", "fin": "Финландски", "swe": "Шведски", "dan": "Датски",
+        "nor": "Норвежки", "tur": "Турецки", "cat": "Каталански", "af": "Африкаанс", "sw": "Суахили",
+    },
+    # Slovensko translations
+    "slv": {
+        "pol": "Poljščina", "eng": "Angleščina", "deu": "Nemščina", "rus": "Ruščina",
+        "ces": "Češčina", "slk": "Slovaščina", "ukr": "Ukrajinščina", "fra": "Francoščina",
+        "spa": "Španščina", "ita": "Italijanščina", "por": "Portugalščina", "nld": "Nizozemščina",
+        "hun": "Madžarščina", "ron": "Romunščina", "bul": "Bolgarščina", "slv": "Slovenščina",
+        "hrv": "Hrvaščina", "srp": "Srbščina", "lit": "Litvanščina", "lav": "Latvijščina",
+        "est": "Estonščina", "fin": "Finščina", "swe": "Švedščina", "dan": "Danščina",
+        "nor": "Norveščina", "tur": "Turščina", "cat": "Katalonščina", "af": "Afrikanščina", "sw": "Svahili",
+    },
+    # Hrvatski translations
+    "hrv": {
+        "pol": "Poljski", "eng": "Engleski", "deu": "Njemački", "rus": "Ruski",
+        "ces": "Češki", "slk": "Slovački", "ukr": "Ukrajinski", "fra": "Francuski",
+        "spa": "Španjolski", "ita": "Talijanski", "por": "Portugalski", "nld": "Nizozemski",
+        "hun": "Mađarski", "ron": "Rumunjski", "bul": "Bugarski", "slv": "Slovenski",
+        "hrv": "Hrvatski", "srp": "Srpski", "lit": "Litavski", "lav": "Latvijski",
+        "est": "Estonski", "fin": "Finski", "swe": "Švedski", "dan": "Danski",
+        "nor": "Norveški", "tur": "Turski", "cat": "Katalonski", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Српски translations
+    "srp": {
+        "pol": "Poljski", "eng": "Engleski", "deu": "Nemački", "rus": "Ruski",
+        "ces": "Češki", "slk": "Slovački", "ukr": "Ukrajinski", "fra": "Francuski",
+        "spa": "Španski", "ita": "Italijanski", "por": "Portugalski", "nld": "Holandski",
+        "hun": "Mađarski", "ron": "Rumunski", "bul": "Bugarski", "slv": "Slovenački",
+        "hrv": "Hrvatski", "srp": "Srpski", "lit": "Litvanski", "lav": "Latvijski",
+        "est": "Estonski", "fin": "Finski", "swe": "Švedski", "dan": "Danski",
+        "nor": "Norveški", "tur": "Turski", "cat": "Katalonski", "af": "Afrikaans", "sw": "Svahili",
+    },
+    # Lietuvių translations
+    "lit": {
+        "pol": "Lenkų", "eng": "Anglų", "deu": "Vokiečių", "rus": "Rusų",
+        "ces": "Čekų", "slk": "Slovakų", "ukr": "Ukrainiečių", "fra": "Prancūzų",
+        "spa": "Ispanų", "ita": "Italų", "por": "Portugalų", "nld": "Olandų",
+        "hun": "Vengrų", "ron": "Rumunų", "bul": "Bulgarų", "slv": "Slovėnų",
+        "hrv": "Kroatų", "srp": "Serbų", "lit": "Lietuvių", "lav": "Latvių",
+        "est": "Estų", "fin": "Suomių", "swe": "Švedų", "dan": "Danų",
+        "nor": "Norvegų", "tur": "Turkų", "cat": "Katalonų", "af": "Afrikanų", "sw": "Svahili",
+    },
+    # Latviešu translations
+    "lav": {
+        "pol": "Poļu", "eng": "Angļu", "deu": "Vācu", "rus": "Krievu",
+        "ces": "Čehu", "slk": "Slovāku", "ukr": "Ukrainiešu", "fra": "Franču",
+        "spa": "Spāņu", "ita": "Itāļu", "por": "Portugāļu", "nld": "Nīderlandiešu",
+        "hun": "Ungāru", "ron": "Rumāņu", "bul": "Bulgāru", "slv": "Slovēņu",
+        "hrv": "Horvātu", "srp": "Serbu", "lit": "Lietuviešu", "lav": "Latviešu",
+        "est": "Igaļu", "fin": "Somu", "swe": "Zviedru", "dan": "Dāņu",
+        "nor": "Norvēģu", "tur": "Turku", "cat": "Kataloņu", "af": "Afrikāņu", "sw": "Svahili",
+    },
+    # Eesti translations
+    "est": {
+        "pol": "Poola", "eng": "Inglise", "deu": "Saksa", "rus": "Vene",
+        "ces": "Tšehhi", "slk": "Slovaki", "ukr": "Ukraina", "fra": "Prantsuse",
+        "spa": "Hispaania", "ita": "Itaalia", "por": "Portugali", "nld": "Hollandi",
+        "hun": "Ungari", "ron": "Rumeenia", "bul": "Bulgaaria", "slv": "Sloveenia",
+        "hrv": "Horvaatia", "srp": "Serbia", "lit": "Leedu", "lav": "Läti",
+        "est": "Eesti", "fin": "Soome", "swe": "Rootsi", "dan": "Taani",
+        "nor": "Norra", "tur": "Türgi", "cat": "Katalaani", "af": "Afrikaansi", "sw": "Svahili",
+    },
+    # Suomi translations
+    "fin": {
+        "pol": "Puola", "eng": "Englanti", "deu": "Saksa", "rus": "Venäjä",
+        "ces": "Tšekki", "slk": "Slovakia", "ukr": "Ukraina", "fra": "Ranska",
+        "spa": "Espanja", "ita": "Italia", "por": "Portugali", "nld": "Hollanti",
+        "hun": "Unkari", "ron": "Romania", "bul": "Bulgaria", "slv": "Slovenia",
+        "hrv": "Kroatia", "srp": "Serbia", "lit": "Liettua", "lav": "Latvia",
+        "est": "Viro", "fin": "Suomi", "swe": "Ruotsi", "dan": "Tanska",
+        "nor": "Norja", "tur": "Turkki", "cat": "Katalaani", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Svenska translations
+    "swe": {
+        "pol": "Polska", "eng": "Engelska", "deu": "Tyska", "rus": "Ryska",
+        "ces": "Tjeckiska", "slk": "Slovakiska", "ukr": "Ukrainska", "fra": "Franska",
+        "spa": "Spanska", "ita": "Italienska", "por": "Portugisiska", "nld": "Nederländska",
+        "hun": "Ungerska", "ron": "Rumänska", "bul": "Bulgariska", "slv": "Slovenska",
+        "hrv": "Kroatiska", "srp": "Serbiska", "lit": "Litauiska", "lav": "Lettiska",
+        "est": "Estniska", "fin": "Finska", "swe": "Svenska", "dan": "Danska",
+        "nor": "Norska", "tur": "Turkiska", "cat": "Katalanska", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Dansk translations
+    "dan": {
+        "pol": "Polsk", "eng": "Engelsk", "deu": "Tysk", "rus": "Russisk",
+        "ces": "Tjekkisk", "slk": "Slovakisk", "ukr": "Ukrainsk", "fra": "Fransk",
+        "spa": "Spansk", "ita": "Italiensk", "por": "Portugisisk", "nld": "Nederlandsk",
+        "hun": "Ungarsk", "ron": "Rumænsk", "bul": "Bulgarsk", "slv": "Slovensk",
+        "hrv": "Kroatisk", "srp": "Serbisk", "lit": "Litauisk", "lav": "Lettisk",
+        "est": "Estisk", "fin": "Finsk", "swe": "Svensk", "dan": "Dansk",
+        "nor": "Norsk", "tur": "Tyrkisk", "cat": "Katalansk", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Norsk translations
+    "nor": {
+        "pol": "Polsk", "eng": "Engelsk", "deu": "Tysk", "rus": "Russisk",
+        "ces": "Tsjekkisk", "slk": "Slovakisk", "ukr": "Ukrainsk", "fra": "Fransk",
+        "spa": "Spansk", "ita": "Italiensk", "por": "Portugisisk", "nld": "Nederlandsk",
+        "hun": "Ungarsk", "ron": "Rumensk", "bul": "Bulgarsk", "slv": "Slovensk",
+        "hrv": "Kroatisk", "srp": "Serbisk", "lit": "Litauisk", "lav": "Lettisk",
+        "est": "Estisk", "fin": "Finsk", "swe": "Svensk", "dan": "Dansk",
+        "nor": "Norsk", "tur": "Tyrkisk", "cat": "Katalansk", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Türkçe translations
+    "tur": {
+        "pol": "Lehçe", "eng": "İngilizce", "deu": "Almanca", "rus": "Rusça",
+        "ces": "Çekçe", "slk": "Slovakça", "ukr": "Ukraynaca", "fra": "Fransızca",
+        "spa": "İspanyolca", "ita": "İtalyanca", "por": "Portekizce", "nld": "Flemenkçe",
+        "hun": "Macarca", "ron": "Romence", "bul": "Bulgarca", "slv": "Slovence",
+        "hrv": "Hırvatça", "srp": "Sırpça", "lit": "Litovca", "lav": "Letonca",
+        "est": "Estonca", "fin": "Fince", "swe": "İsveççe", "dan": "Danca",
+        "nor": "Norveççe", "tur": "Türkçe", "cat": "Katalanca", "af": "Afrikanca", "sw": "Svahili",
+    },
+    # Català translations
+    "cat": {
+        "pol": "Polonès", "eng": "Anglès", "deu": "Alemany", "rus": "Rus",
+        "ces": "Chec", "slk": "Eslovac", "ukr": "Ucraïnès", "fra": "Francès",
+        "spa": "Espanyol", "ita": "Italiano", "por": "Portuguès", "nld": "Neerlandès",
+        "hun": "Hongarès", "ron": "Romanès", "bul": "Búlgar", "slv": "Eslovè",
+        "hrv": "Croata", "srp": "Serbi", "lit": "Lituà", "lav": "Letó",
+        "est": "Estonià", "fin": "Finès", "swe": "Suec", "dan": "Danès",
+        "nor": "Norvegès", "tur": "Turc", "cat": "Català", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Afrikaans translations
+    "af": {
+        "pol": "Pools", "eng": "Engels", "deu": "Duits", "rus": "Russies",
+        "ces": "Tsjeggies", "slk": "Slowaaks", "ukr": "Oekraïens", "fra": "Frans",
+        "spa": "Spaans", "ita": "Italiaans", "por": "Portugees", "nld": "Nederlands",
+        "hun": "Hongaars", "ron": "Roemeens", "bul": "Bulgaars", "slv": "Sloweens",
+        "hrv": "Kroaties", "srp": "Serwies", "lit": "Litaus", "lav": "Letlands",
+        "est": "Estlands", "fin": "Fins", "swe": "Sweeds", "dan": "Deens",
+        "nor": "Noors", "tur": "Turks", "cat": "Katalaans", "af": "Afrikaans", "sw": "Swahili",
+    },
+    # Kiswahili translations
+    "sw": {
+        "pol": "Polandi", "eng": "Kiingereza", "deu": "Kijerumani", "rus": "Kirusi",
+        "ces": "Kicheki", "slk": "Kislovakia", "ukr": "Kiukrainiaji", "fra": "Kifaransa",
+        "spa": "Kihispania", "ita": "Kiitaliano", "por": "Kireno", "nld": "Kiholanzi",
+        "hun": "Kimahadi", "ron": "Kiromania", "bul": "Kibulgariaji", "slv": "Kisloveniaji",
+        "hrv": "Kikroaciaji", "srp": "Kiserbiaji", "lit": "Kilituaniaji", "lav": "Kilatviaji",
+        "est": "Kiestoniaji", "fin": "Kifini", "swe": "Kiswidi", "dan": "Kidani",
+        "nor": "Kinorwei", "tur": "Kituruki", "cat": "Katalkaniaji", "af": "Kaifrikanzi", "sw": "Kiswahili",
+    },
 }
 
 LANGUAGE_PROMPT_NAMES = {
