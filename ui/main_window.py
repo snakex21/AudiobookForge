@@ -79,12 +79,15 @@ EDGE_VOICES = [
 PDF_LANGUAGES = [
     "pol", "eng", "deu", "rus", "ces", "slk", "ukr", "fra", "spa", "ita",
     "por", "nld", "hun", "ron", "bul", "slv", "hrv", "srp", "lit", "lav",
-    "est", "fin", "swe", "dan", "nor", "tur",
+    "est", "fin", "swe", "dan", "nor", "tur", "cat", "af", "sw",
 ]
 TARGET_LANGUAGES = ["pol", "eng", "rus", "deu", "fra", "ces", "ukr", "spa", "ita", "por", "nld", "hun", "ron", "fin", "swe", "dan", "nor", "tur"]
 UI_LANGUAGE_OPTIONS = [
     ("Polski", "pl"),
     ("Cesky", "cs"),
+    ("Slovencina", "slk"),
+    ("Slovenscina", "slv"),
+    ("Hrvatski", "hrv"),
     ("Romana", "ro"),
     ("Magyar", "hu"),
     ("English", "en"),
@@ -95,9 +98,15 @@ UI_LANGUAGE_OPTIONS = [
     ("Russkiy", "ru"),
     ("Ukrainska", "uk"),
     ("Turkce", "tr"),
+    ("Catala", "cat"),
+    ("Afrikaans", "af"),
+    ("Kiswahili", "sw"),
     ("Portugues", "pt"),
     ("Nederlands", "nl"),
     ("Svenska", "sv"),
+    ("Eesti", "est"),
+    ("Latviesu", "lav"),
+    ("Lietuviu", "lit"),
     ("Suomi", "fi"),
     ("Dansk", "da"),
     ("Norsk", "no"),
