@@ -152,6 +152,13 @@ def resolve_project_path(path_value: str, default: str = OUTPUT_DIR) -> Path:
     return candidate if candidate.is_absolute() else PROJECT_DIR / candidate
 
 
+def resolve_configured_pdf_path(config: dict) -> Optional[Path]:
+    pdf_path_value = (config.get("pdf_path") or "").strip()
+    if not pdf_path_value:
+        return None
+    return resolve_project_path(pdf_path_value, PDF_PATH)
+
+
 def get_audio_language_settings(language_code: str) -> dict:
     return AUDIO_LANGUAGE_SETTINGS.get(language_code, AUDIO_LANGUAGE_SETTINGS["pol"])
 
@@ -1175,7 +1182,7 @@ def export_translated_pdf(output_dir: Path, log_callback: Callable[[str], None])
 
 def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_callback: Callable[[str, int, int], None], pause_event: threading.Event, stop_event: threading.Event):
     started_at = time.time()
-    pdf_path = Path(config.get("pdf_path", "book.pdf"))
+    pdf_path = resolve_configured_pdf_path(config)
     output_dir = resolve_project_path(config.get("output_dir", OUTPUT_DIR))
     speaker_wav = Path(config.get("speaker_wav", "speaker.wav")) if config.get("speaker_wav") else None
     txt_path = Path(config.get("txt_path")) if config.get("txt_path") else None
@@ -1195,6 +1202,11 @@ def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_cal
     chatterbox_url = config.get("chatterbox_url", LLM_URLS["chatterbox"])
     tts_api_key = config.get("tts_api_key")
     export_pdf = config.get("export_pdf", True)
+
+    if mode != "txt_to_audio":
+        configured_pdf = (config.get("pdf_path") or "").strip()
+        if not pdf_path or not pdf_path.is_file():
+            raise FileNotFoundError(f"Nieprawidlowy plik PDF: {configured_pdf or '<empty>'}")
 
     prepare_output_dir_for_job(config, output_dir, log_callback)
 

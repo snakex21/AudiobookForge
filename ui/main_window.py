@@ -177,6 +177,7 @@ TRANSLATIONS = {
         "progress_audio": "Audio",
         "progress_merge": "Scalanie",
         "console": "Konsola",
+        "recent_projects": "Ostatnie projekty",
     },
     "cs": {
         "app_title": "AUDIOBOOK FORGE v1.0",
@@ -1047,6 +1048,14 @@ EXTRA_UI_TEXTS = {
         "summary_final_audio": "Finalne audio: {}",
         "yes": "tak",
         "no": "nie",
+        "recent_empty": "Brak ostatnich projektów.",
+        "recent_load": "Wczytaj",
+        "recent_open": "Otwórz",
+        "recent_source": "Źródło: {}",
+        "recent_output": "Wyjście: {}",
+        "recent_status_configured": "Skonfigurowany",
+        "recent_status_in_progress": "Nieukończony",
+        "recent_status_completed": "Ukończony",
     },
     "cs": {
         "import_zip_button": "⬆ Import ZIP (config + Piper)",
