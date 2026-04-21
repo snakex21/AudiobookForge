@@ -15,7 +15,7 @@ Open-source desktop tooling for local-first audiobook generation from PDFs and T
 - `LLM Vision OCR` fallback for scanned or badly encoded PDFs
 - `Piper`, `Edge TTS`, `Chatterbox`, `OpenAI TTS`, `ElevenLabs`
 - multilingual desktop UI with runtime language switching
-- current UI languages: Polish, Czech, Romanian, Hungarian, English, German, French, Spanish, Italian, Russian, Ukrainian, Turkish, Portuguese, Dutch, Swedish, Finnish, Danish, Norwegian
+- current UI languages: Polish, Czech, Slovak, Slovenian, Croatian, Romanian, Hungarian, English, German, French, Spanish, Italian, Russian, Ukrainian, Turkish, Catalan, Afrikaans, Swahili, Portuguese, Dutch, Swedish, Estonian, Latvian, Lithuanian, Finnish, Danish, Norwegian
 - built-in Piper model download workflow
 - robust handling of legacy PDFs with broken encoding and OCR fallback
 
@@ -96,7 +96,7 @@ Requirements for installer build:
 
 - Inno Setup 6 installed
 - `ISCC.exe` available in `PATH`, or installed in the default Inno Setup folder
-- installer languages include English, Polish, Czech, Romanian, Hungarian, Finnish, Danish, Norwegian, German, French, Spanish, Italian, Russian, Ukrainian, Turkish, Portuguese, Dutch, and Swedish
+- installer languages include English, Polish, Czech, Slovak, Slovenian, Croatian, Romanian, Hungarian, Catalan, Afrikaans, Swahili, Estonian, Latvian, Lithuanian, Finnish, Danish, Norwegian, German, French, Spanish, Italian, Russian, Ukrainian, Turkish, Portuguese, Dutch, and Swedish
 
 Manual PyInstaller example:
 
@@ -149,8 +149,17 @@ High-level architecture notes are available here:
 - [Español](#español)
 - [Italiano](#italiano)
 - [Türkçe](#türkçe)
+- [Slovencina](#slovencina)
+- [Slovenscina](#slovenscina)
+- [Hrvatski](#hrvatski)
 - [Romana](#romana)
 - [Magyar](#magyar)
+- [Catala](#catala)
+- [Afrikaans](#afrikaans)
+- [Kiswahili](#kiswahili)
+- [Eesti](#eesti)
+- [Latviesu](#latviesu)
+- [Lietuviu](#lietuviu)
 - [Suomi](#suomi)
 - [Dansk](#dansk)
 - [Norsk](#norsk)
@@ -1727,6 +1736,1347 @@ Issue-urile si pull request-urile sunt binevenite. Include un exemplu reproducti
 ### License
 
 Licenta: `MIT`. Vezi `LICENSE`.
+
+---
+
+## Slovencina
+
+### Mini TOC
+
+- [Features](#sk-features)
+- [Requirements](#sk-requirements)
+- [Installation](#sk-installation)
+- [Usage](#sk-usage)
+- [Configuration](#sk-configuration)
+- [TTS Providers](#sk-tts-providers)
+- [Supported Languages](#sk-supported-languages)
+- [Contributing](#sk-contributing)
+- [License](#sk-license)
+
+<a id="sk-features"></a>
+### Features
+
+- Desktopova aplikacia v Python `tkinter` pre `PDF -> audiokniha` a `TXT -> audiokniha`.
+- Hlavne rezimy: `pdf_to_audio`, `translate_to_audio`, `txt_to_audio`.
+- Rychla priama extrakcia cez `pypdfium2`, bez Popplera.
+- `LLM Vision OCR` pre skenovane alebo narocne PDF.
+- OCR retry logika pri prazdnej odpovedi modelu.
+- Lepsie spracovanie starych alebo zle kodovanych PDF.
+- Lokalny `Piper` TTS a cloudovy `Edge TTS`.
+- Viacjazycne UI.
+- Vstavany workflow na stahovanie modelov Piper.
+- Generovanie audia po chunkoch s finalnym spojenim do `audiobook_final.mp3`.
+
+<a id="sk-requirements"></a>
+### Requirements
+
+- Python `3.10+`
+- `tkinter`
+- `ffmpeg` v `PATH`
+- `piper-tts`
+- `pypdfium2`
+- zavislosti z `requirements.txt`
+- volitelne `LM Studio` alebo iny OpenAI-compatible endpoint pre Vision OCR / preklad
+
+<a id="sk-installation"></a>
+### Installation
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install pypdfium2 piper-tts
+python app.py
+```
+
+Poznamky k PyInstalleru:
+
+- `--onefile` moze byt problematicky s `piper-tts` a `pypdfium2`.
+- Odporucany build:
+
+```bash
+pyinstaller --onedir --windowed --name AudiobookForge app.py
+```
+
+<a id="sk-usage"></a>
+### Usage
+
+1. Vyberte rezim.
+2. Zvolte vstupny PDF alebo TXT subor a vystupny priecinok.
+3. Vyberte rezim extrakcie: `pypdfium2` alebo `LLM Vision OCR`.
+4. Zvolte `Piper` alebo `Edge TTS`.
+5. Ak treba, stiahnite model Piper.
+6. Spustite pipeline na vytvorenie chunkov a finalnej audioknihy.
+
+<a id="sk-configuration"></a>
+### Configuration
+
+Hlavne nastavenia su ulozene v `config.json`.
+
+Klucove polia:
+
+- `pdf_path`
+- `txt_path`
+- `output_dir`
+- `mode`
+- `pdf_language`
+- `target_language`
+- `extraction_mode`
+- `tts_provider`
+- `piper_voice`
+- `edge_voice`
+- `llm_provider`
+- `llm_url`
+- `llm_model`
+- `llm_api_key`
+
+Technicke poznamky:
+
+- `pypdfium2` je hlavny backend pre extrakciu a renderovanie.
+- Narocne stranky mozu prejst na image-based OCR.
+- Prazdne OCR odpovede sa opakuju.
+- Finalne spojenie MP3 zabezpecuje `ffmpeg`.
+
+<a id="sk-tts-providers"></a>
+### TTS Providers
+
+`Piper`
+- lokalny a offline
+- vyzaduje `piper-tts` a `.onnx` hlasovy model
+
+`Edge TTS`
+- neuralne cloudove hlasy
+- jednoduche nastavenie, vyzaduje siet
+
+<a id="sk-supported-languages"></a>
+### Supported Languages
+
+Jazyky rozhrania:
+- Polski
+- English
+- Deutsch
+- Russkiy
+- Ukrainska
+- Cesky
+- Romana
+- Magyar
+- Francais
+- Espanol
+- Italiano
+- Turkce
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
+
+Cielove jazyky audia / prekladu:
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
+
+Dalsie kody zdrojoveho jazyka PDF su dostupne v UI.
+
+<a id="sk-contributing"></a>
+### Contributing
+
+Issues a pull requesty su vitane. Ak je to mozne, prilozte reprodukovatelny priklad, logy, informacie o prostredi a konfiguraciu TTS / LLM.
+
+<a id="sk-license"></a>
+### License
+
+Licencia: `MIT`. Pozrite `LICENSE`.
+
+---
+
+## Slovenscina
+
+### Mini TOC
+
+- [Features](#sl-features)
+- [Requirements](#sl-requirements)
+- [Installation](#sl-installation)
+- [Usage](#sl-usage)
+- [Configuration](#sl-configuration)
+- [TTS Providers](#sl-tts-providers)
+- [Supported Languages](#sl-supported-languages)
+- [Contributing](#sl-contributing)
+- [License](#sl-license)
+
+<a id="sl-features"></a>
+### Features
+
+- Namizna aplikacija Python `tkinter` za `PDF -> avdioknjiga` in `TXT -> avdioknjiga`.
+- Glavni nacini: `pdf_to_audio`, `translate_to_audio`, `txt_to_audio`.
+- Hitra neposredna ekstrakcija z `pypdfium2`, brez Popplerja.
+- `LLM Vision OCR` za skenirane ali zahtevne PDF-je.
+- OCR retry logika pri praznem odgovoru modela.
+- Boljse obravnavanje starih ali slabo kodiranih PDF-jev.
+- Lokalni `Piper` TTS in oblacni `Edge TTS`.
+- Vecjezicni UI.
+- Vgrajen postopek za prenos Piper modelov.
+- Generiranje zvoka po chunkih z zdruzitvijo v `audiobook_final.mp3`.
+
+<a id="sl-requirements"></a>
+### Requirements
+
+- Python `3.10+`
+- `tkinter`
+- `ffmpeg` v `PATH`
+- `piper-tts`
+- `pypdfium2`
+- odvisnosti iz `requirements.txt`
+- po zelji `LM Studio` ali drug OpenAI-compatible endpoint za Vision OCR / prevajanje
+
+<a id="sl-installation"></a>
+### Installation
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install pypdfium2 piper-tts
+python app.py
+```
+
+Opombe za PyInstaller:
+
+- `--onefile` je lahko problematicen z `piper-tts` in `pypdfium2`.
+- Priporocen build:
+
+```bash
+pyinstaller --onedir --windowed --name AudiobookForge app.py
+```
+
+<a id="sl-usage"></a>
+### Usage
+
+1. Izberite nacin.
+2. Izberite vhodno PDF ali TXT datoteko in izhodno mapo.
+3. Izberite nacin ekstrakcije: `pypdfium2` ali `LLM Vision OCR`.
+4. Izberite `Piper` ali `Edge TTS`.
+5. Po potrebi prenesite Piper model.
+6. Zazenite pipeline za izdelavo chunkov in koncne avdioknjige.
+
+<a id="sl-configuration"></a>
+### Configuration
+
+Glavne nastavitve so shranjene v `config.json`.
+
+Klucna polja:
+
+- `pdf_path`
+- `txt_path`
+- `output_dir`
+- `mode`
+- `pdf_language`
+- `target_language`
+- `extraction_mode`
+- `tts_provider`
+- `piper_voice`
+- `edge_voice`
+- `llm_provider`
+- `llm_url`
+- `llm_model`
+- `llm_api_key`
+
+Tehnicne opombe:
+
+- `pypdfium2` je glavni backend za ekstrakcijo in renderiranje.
+- Zahtevne strani lahko preidejo na image-based OCR.
+- Prazni OCR odgovori se ponovijo.
+- Koncno zdruzevanje MP3 izvaja `ffmpeg`.
+
+<a id="sl-tts-providers"></a>
+### TTS Providers
+
+`Piper`
+- lokalen in offline
+- zahteva `piper-tts` in `.onnx` glasovni model
+
+`Edge TTS`
+- neuralni oblacni glasovi
+- enostavna nastavitev, potrebuje omrezje
+
+<a id="sl-supported-languages"></a>
+### Supported Languages
+
+Jeziki vmesnika:
+- Polski
+- English
+- Deutsch
+- Russkiy
+- Ukrainska
+- Cesky
+- Romana
+- Magyar
+- Francais
+- Espanol
+- Italiano
+- Turkce
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
+
+Ciljni jeziki za audio / prevod:
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
+
+Dodatne kode izvornega jezika PDF so na voljo v UI.
+
+<a id="sl-contributing"></a>
+### Contributing
+
+Issues in pull requesti so dobrodosli. Ce je mogoce, dodajte reproducibilen primer, loge, podatke o okolju in konfiguracijo TTS / LLM.
+
+<a id="sl-license"></a>
+### License
+
+Licenca: `MIT`. Glejte `LICENSE`.
+
+---
+
+## Hrvatski
+
+### Mini TOC
+
+- [Features](#hr-features)
+- [Requirements](#hr-requirements)
+- [Installation](#hr-installation)
+- [Usage](#hr-usage)
+- [Configuration](#hr-configuration)
+- [TTS Providers](#hr-tts-providers)
+- [Supported Languages](#hr-supported-languages)
+- [Contributing](#hr-contributing)
+- [License](#hr-license)
+
+<a id="hr-features"></a>
+### Features
+
+- Python `tkinter` desktop aplikacija za `PDF -> audioknjiga` i `TXT -> audioknjiga`.
+- Glavni modovi: `pdf_to_audio`, `translate_to_audio`, `txt_to_audio`.
+- Brza izravna ekstrakcija s `pypdfium2`, bez Popplera.
+- `LLM Vision OCR` za skenirane ili zahtjevne PDF-ove.
+- OCR retry logika za prazne odgovore modela.
+- Bolje rukovanje starim ili lose kodiranim PDF-ovima.
+- Lokalni `Piper` TTS i cloud `Edge TTS`.
+- Visejezicni UI.
+- Ugradeni workflow za preuzimanje Piper modela.
+- Generiranje zvuka po chunkovima s konacnim spajanjem u `audiobook_final.mp3`.
+
+<a id="hr-requirements"></a>
+### Requirements
+
+- Python `3.10+`
+- `tkinter`
+- `ffmpeg` u `PATH`
+- `piper-tts`
+- `pypdfium2`
+- ovisnosti iz `requirements.txt`
+- opcionalno `LM Studio` ili drugi OpenAI-compatible endpoint za Vision OCR / prijevod
+
+<a id="hr-installation"></a>
+### Installation
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install pypdfium2 piper-tts
+python app.py
+```
+
+Napomene za PyInstaller:
+
+- `--onefile` moze biti problem s `piper-tts` i `pypdfium2`.
+- Preporuceni build:
+
+```bash
+pyinstaller --onedir --windowed --name AudiobookForge app.py
+```
+
+<a id="hr-usage"></a>
+### Usage
+
+1. Odaberite mod.
+2. Odaberite ulazni PDF ili TXT i izlaznu mapu.
+3. Odaberite nacin ekstrakcije: `pypdfium2` ili `LLM Vision OCR`.
+4. Odaberite `Piper` ili `Edge TTS`.
+5. Po potrebi preuzmite Piper model.
+6. Pokrenite pipeline za stvaranje chunkova i zavrsne audioknjige.
+
+<a id="hr-configuration"></a>
+### Configuration
+
+Glavne postavke pohranjene su u `config.json`.
+
+Klucna polja:
+
+- `pdf_path`
+- `txt_path`
+- `output_dir`
+- `mode`
+- `pdf_language`
+- `target_language`
+- `extraction_mode`
+- `tts_provider`
+- `piper_voice`
+- `edge_voice`
+- `llm_provider`
+- `llm_url`
+- `llm_model`
+- `llm_api_key`
+
+Tehnicke napomene:
+
+- `pypdfium2` je glavni backend za ekstrakciju i renderiranje.
+- Zahtjevne stranice mogu prijeci na image-based OCR.
+- Prazni OCR odgovori se ponavljaju.
+- Zavrsno spajanje MP3 datoteke radi `ffmpeg`.
+
+<a id="hr-tts-providers"></a>
+### TTS Providers
+
+`Piper`
+- lokalni i offline
+- zahtijeva `piper-tts` i `.onnx` glasovni model
+
+`Edge TTS`
+- neuralni cloud glasovi
+- jednostavno postavljanje, potrebna mreza
+
+<a id="hr-supported-languages"></a>
+### Supported Languages
+
+Jezici sucelja:
+- Polski
+- English
+- Deutsch
+- Russkiy
+- Ukrainska
+- Cesky
+- Romana
+- Magyar
+- Francais
+- Espanol
+- Italiano
+- Turkce
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
+
+Ciljni jezici za audio / prijevod:
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
+
+Dodatni kodovi izvornog PDF jezika dostupni su u UI.
+
+<a id="hr-contributing"></a>
+### Contributing
+
+Issues i pull requestovi su dobrodosli. Ako je moguce, prilozite reproducibilan primjer, logove, podatke o okruzenju i TTS / LLM konfiguraciju.
+
+<a id="hr-license"></a>
+### License
+
+Licenca: `MIT`. Pogledajte `LICENSE`.
+
+---
+
+## Catala
+
+### Mini TOC
+
+- [Features](#ca-features)
+- [Requirements](#ca-requirements)
+- [Installation](#ca-installation)
+- [Usage](#ca-usage)
+- [Configuration](#ca-configuration)
+- [TTS Providers](#ca-tts-providers)
+- [Supported Languages](#ca-supported-languages)
+- [Contributing](#ca-contributing)
+- [License](#ca-license)
+
+<a id="ca-features"></a>
+### Features
+
+- Aplicacio d'escriptori Python `tkinter` per a `PDF -> audiollibre` i `TXT -> audiollibre`.
+- Modes principals: `pdf_to_audio`, `translate_to_audio`, `txt_to_audio`.
+- Extraccio rapida amb `pypdfium2`, sense Poppler.
+- `LLM Vision OCR` per a PDF escanejats o dificils.
+- Logica de retry OCR per a respostes buides del model.
+- Millor gestio de PDF antics o mal codificats.
+- `Piper` local i `Edge TTS` al nuvol.
+- UI multilingue.
+- Workflow integrat per descarregar models Piper.
+- Generacio d'audio per chunks amb fusio final a `audiobook_final.mp3`.
+
+<a id="ca-requirements"></a>
+### Requirements
+
+- Python `3.10+`
+- `tkinter`
+- `ffmpeg` a `PATH`
+- `piper-tts`
+- `pypdfium2`
+- dependencies de `requirements.txt`
+- opcionalment `LM Studio` o un altre endpoint OpenAI-compatible per a Vision OCR / traduccio
+
+<a id="ca-installation"></a>
+### Installation
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install pypdfium2 piper-tts
+python app.py
+```
+
+Notes de PyInstaller:
+
+- `--onefile` pot ser problematic amb `piper-tts` i `pypdfium2`.
+- Build recomanat:
+
+```bash
+pyinstaller --onedir --windowed --name AudiobookForge app.py
+```
+
+<a id="ca-usage"></a>
+### Usage
+
+1. Selecciona un mode.
+2. Tria el fitxer PDF o TXT d'entrada i la carpeta de sortida.
+3. Escull el mode d'extraccio: `pypdfium2` o `LLM Vision OCR`.
+4. Selecciona `Piper` o `Edge TTS`.
+5. Descarrega un model Piper si cal.
+6. Executa el pipeline per generar chunks i l'audiollibre final.
+
+<a id="ca-configuration"></a>
+### Configuration
+
+La configuracio principal es desa a `config.json`.
+
+Camps clau:
+
+- `pdf_path`
+- `txt_path`
+- `output_dir`
+- `mode`
+- `pdf_language`
+- `target_language`
+- `extraction_mode`
+- `tts_provider`
+- `piper_voice`
+- `edge_voice`
+- `llm_provider`
+- `llm_url`
+- `llm_model`
+- `llm_api_key`
+
+Notes tecniques:
+
+- `pypdfium2` es el backend principal d'extraccio i renderitzat.
+- Les pagines dificils poden passar a image-based OCR.
+- Les respostes OCR buides es reintenten.
+- La fusio final del MP3 la gestiona `ffmpeg`.
+
+<a id="ca-tts-providers"></a>
+### TTS Providers
+
+`Piper`
+- local i offline
+- requereix `piper-tts` i un model de veu `.onnx`
+
+`Edge TTS`
+- veus neuronals al nuvol
+- configuracio senzilla, cal xarxa
+
+<a id="ca-supported-languages"></a>
+### Supported Languages
+
+Idiomes de la interfície:
+- Polski
+- English
+- Deutsch
+- Russkiy
+- Ukrainska
+- Cesky
+- Romana
+- Magyar
+- Francais
+- Espanol
+- Italiano
+- Turkce
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
+
+Idiomes objectiu d'audio / traduccio:
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
+
+Hi ha mes codis de llengua font PDF disponibles a la UI.
+
+<a id="ca-contributing"></a>
+### Contributing
+
+Les issues i pull requests son benvingudes. Si es possible, inclou una mostra reproduible, logs, detalls de l'entorn i configuracio de TTS / LLM.
+
+<a id="ca-license"></a>
+### License
+
+Llicencia: `MIT`. Vegeu `LICENSE`.
+
+---
+
+## Afrikaans
+
+### Mini TOC
+
+- [Features](#af-features)
+- [Requirements](#af-requirements)
+- [Installation](#af-installation)
+- [Usage](#af-usage)
+- [Configuration](#af-configuration)
+- [TTS Providers](#af-tts-providers)
+- [Supported Languages](#af-supported-languages)
+- [Contributing](#af-contributing)
+- [License](#af-license)
+
+<a id="af-features"></a>
+### Features
+
+- Python `tkinter` rekenaartoepassing vir `PDF -> oudioboek` en `TXT -> oudioboek`.
+- Hoofmodusse: `pdf_to_audio`, `translate_to_audio`, `txt_to_audio`.
+- Vinnige direkte ekstraksie met `pypdfium2`, sonder Poppler.
+- `LLM Vision OCR` vir gescande of moeilike PDF's.
+- OCR retry logika vir le modelantwoorde.
+- Beter hantering van ou of swak geenkodeerde PDF's.
+- Plaaslike `Piper` TTS en wolkgebaseerde `Edge TTS`.
+- Meertalige UI.
+- Ingeboude workflow om Piper-modelle af te laai.
+- Chunk-gebaseerde audiogenerering met finale samevoeging na `audiobook_final.mp3`.
+
+<a id="af-requirements"></a>
+### Requirements
+
+- Python `3.10+`
+- `tkinter`
+- `ffmpeg` in `PATH`
+- `piper-tts`
+- `pypdfium2`
+- afhanklikhede uit `requirements.txt`
+- opsioneel `LM Studio` of 'n ander OpenAI-compatible endpoint vir Vision OCR / vertaling
+
+<a id="af-installation"></a>
+### Installation
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install pypdfium2 piper-tts
+python app.py
+```
+
+PyInstaller-notas:
+
+- `--onefile` kan problematies wees met `piper-tts` en `pypdfium2`.
+- Aanbevole build:
+
+```bash
+pyinstaller --onedir --windowed --name AudiobookForge app.py
+```
+
+<a id="af-usage"></a>
+### Usage
+
+1. Kies 'n modus.
+2. Kies die invoer PDF- of TXT-leer en die uitvoermap.
+3. Kies die ekstraksie-modus: `pypdfium2` of `LLM Vision OCR`.
+4. Kies `Piper` of `Edge TTS`.
+5. Laai 'n Piper-model af indien nodig.
+6. Hardloop die pipeline om chunks en die finale oudioboek te genereer.
+
+<a id="af-configuration"></a>
+### Configuration
+
+Primere instellings word in `config.json` gestoor.
+
+Belangrike velde:
+
+- `pdf_path`
+- `txt_path`
+- `output_dir`
+- `mode`
+- `pdf_language`
+- `target_language`
+- `extraction_mode`
+- `tts_provider`
+- `piper_voice`
+- `edge_voice`
+- `llm_provider`
+- `llm_url`
+- `llm_model`
+- `llm_api_key`
+
+Tegniese notas:
+
+- `pypdfium2` is die primere backend vir ekstraksie en rendering.
+- Moeilike bladsye kan terugval na image-based OCR.
+- Le OCR-antwoorde word weer probeer.
+- Finale MP3-samestelling word deur `ffmpeg` hanteer.
+
+<a id="af-tts-providers"></a>
+### TTS Providers
+
+`Piper`
+- plaaslik en offline
+- vereis `piper-tts` en 'n `.onnx` stemmodel
+
+`Edge TTS`
+- neurale wolkstemme
+- maklike opstelling, netwerk vereis
+
+<a id="af-supported-languages"></a>
+### Supported Languages
+
+UI-tale:
+- Polski
+- English
+- Deutsch
+- Russkiy
+- Ukrainska
+- Cesky
+- Romana
+- Magyar
+- Francais
+- Espanol
+- Italiano
+- Turkce
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
+
+Teikentale vir audio / vertaling:
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
+
+Bykomende PDF-brontaal-kodes is in die UI beskikbaar.
+
+<a id="af-contributing"></a>
+### Contributing
+
+Issues en pull requests is welkom. Sluit asseblief 'n reproduseerbare voorbeeld, logs, omgewingsbesonderhede en TTS / LLM-konfigurasie in waar moontlik.
+
+<a id="af-license"></a>
+### License
+
+Lisensie: `MIT`. Sien `LICENSE`.
+
+---
+
+## Kiswahili
+
+### Mini TOC
+
+- [Features](#sw-features)
+- [Requirements](#sw-requirements)
+- [Installation](#sw-installation)
+- [Usage](#sw-usage)
+- [Configuration](#sw-configuration)
+- [TTS Providers](#sw-tts-providers)
+- [Supported Languages](#sw-supported-languages)
+- [Contributing](#sw-contributing)
+- [License](#sw-license)
+
+<a id="sw-features"></a>
+### Features
+
+- Programu ya desktop ya Python `tkinter` kwa `PDF -> kitabu cha sauti` na `TXT -> kitabu cha sauti`.
+- Modi kuu: `pdf_to_audio`, `translate_to_audio`, `txt_to_audio`.
+- Utoaji wa maandishi wa haraka kwa kutumia `pypdfium2`, bila Poppler.
+- `LLM Vision OCR` kwa PDF zilizoskaniwa au ngumu.
+- OCR retry logic kwa majibu matupu ya modeli.
+- Ushughulikiaji bora wa PDF za zamani au zilizokodishwa vibaya.
+- `Piper` TTS ya ndani na `Edge TTS` ya wingu.
+- UI ya lugha nyingi.
+- Workflow iliyojengwa ndani ya kupakua modeli za Piper.
+- Uzalishaji wa sauti kwa chunks na muungano wa mwisho kuwa `audiobook_final.mp3`.
+
+<a id="sw-requirements"></a>
+### Requirements
+
+- Python `3.10+`
+- `tkinter`
+- `ffmpeg` ndani ya `PATH`
+- `piper-tts`
+- `pypdfium2`
+- vitegemezi kutoka `requirements.txt`
+- hiari `LM Studio` au endpoint nyingine ya OpenAI-compatible kwa Vision OCR / tafsiri
+
+<a id="sw-installation"></a>
+### Installation
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install pypdfium2 piper-tts
+python app.py
+```
+
+Maelezo ya PyInstaller:
+
+- `--onefile` inaweza kuwa na matatizo na `piper-tts` pamoja na `pypdfium2`.
+- Build inayopendekezwa:
+
+```bash
+pyinstaller --onedir --windowed --name AudiobookForge app.py
+```
+
+<a id="sw-usage"></a>
+### Usage
+
+1. Chagua modi.
+2. Chagua faili ya PDF au TXT ya kuingiza na folda ya kutoa matokeo.
+3. Chagua modi ya utoaji: `pypdfium2` au `LLM Vision OCR`.
+4. Chagua `Piper` au `Edge TTS`.
+5. Pakua modeli ya Piper ikihitajika.
+6. Endesha pipeline ili kutengeneza chunks na kitabu cha sauti cha mwisho.
+
+<a id="sw-configuration"></a>
+### Configuration
+
+Mipangilio mikuu huhifadhiwa kwenye `config.json`.
+
+Sehemu muhimu:
+
+- `pdf_path`
+- `txt_path`
+- `output_dir`
+- `mode`
+- `pdf_language`
+- `target_language`
+- `extraction_mode`
+- `tts_provider`
+- `piper_voice`
+- `edge_voice`
+- `llm_provider`
+- `llm_url`
+- `llm_model`
+- `llm_api_key`
+
+Maelezo ya kiufundi:
+
+- `pypdfium2` ndio backend kuu ya utoaji na urenderi.
+- Kurasa ngumu zinaweza kurudi kwenye image-based OCR.
+- Majibu matupu ya OCR hujaribiwa tena.
+- Muungano wa mwisho wa MP3 hushughulikiwa na `ffmpeg`.
+
+<a id="sw-tts-providers"></a>
+### TTS Providers
+
+`Piper`
+- ya ndani na offline
+- inahitaji `piper-tts` na modeli ya sauti ya `.onnx`
+
+`Edge TTS`
+- sauti za neural za wingu
+- usanidi rahisi, mtandao unahitajika
+
+<a id="sw-supported-languages"></a>
+### Supported Languages
+
+Lugha za UI:
+- Polski
+- English
+- Deutsch
+- Russkiy
+- Ukrainska
+- Cesky
+- Romana
+- Magyar
+- Francais
+- Espanol
+- Italiano
+- Turkce
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
+
+Lugha lengwa za sauti / tafsiri:
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
+
+Kuna misimbo ya ziada ya lugha chanzo ya PDF inayopatikana kwenye UI.
+
+<a id="sw-contributing"></a>
+### Contributing
+
+Issues na pull requests zinakaribishwa. Ikiwezekana, jumuisha mfano unaoweza kurudiwa, logi, maelezo ya mazingira, na usanidi wa TTS / LLM.
+
+<a id="sw-license"></a>
+### License
+
+Leseni: `MIT`. Tazama `LICENSE`.
+
+---
+
+## Eesti
+
+### Mini TOC
+
+- [Features](#et-features)
+- [Requirements](#et-requirements)
+- [Installation](#et-installation)
+- [Usage](#et-usage)
+- [Configuration](#et-configuration)
+- [TTS Providers](#et-tts-providers)
+- [Supported Languages](#et-supported-languages)
+- [Contributing](#et-contributing)
+- [License](#et-license)
+
+<a id="et-features"></a>
+### Features
+
+- Python `tkinter` tootauarakendus `PDF -> audioraamat` ja `TXT -> audioraamat` jaoks.
+- Pohireziimid: `pdf_to_audio`, `translate_to_audio`, `txt_to_audio`.
+- Kiire otsene ekstraktimine `pypdfium2` abil, ilma Popplerita.
+- `LLM Vision OCR` skannitud voi keeruliste PDF-ide jaoks.
+- OCR retry loogika tuhjade mudelivastuste korral.
+- Parem tugi vanadele voi halvasti kodeeritud PDF-idele.
+- Kohalik `Piper` TTS ja pilvepohine `Edge TTS`.
+- Mitmekeelne UI.
+- Sisseehitatud Piperi mudelite allalaadimise workflow.
+- Chunk-pohine heli genereerimine koos lopliku uhendamisega faili `audiobook_final.mp3`.
+
+<a id="et-requirements"></a>
+### Requirements
+
+- Python `3.10+`
+- `tkinter`
+- `ffmpeg` `PATH`-is
+- `piper-tts`
+- `pypdfium2`
+- soltuvused failist `requirements.txt`
+- valikuline `LM Studio` voi muu OpenAI-compatible endpoint Vision OCR-i / tolke jaoks
+
+<a id="et-installation"></a>
+### Installation
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install pypdfium2 piper-tts
+python app.py
+```
+
+PyInstalleri markused:
+
+- `--onefile` voib olla problemaatiline koos `piper-tts` ja `pypdfium2`-ga.
+- Soovitatav build:
+
+```bash
+pyinstaller --onedir --windowed --name AudiobookForge app.py
+```
+
+<a id="et-usage"></a>
+### Usage
+
+1. Valige reziim.
+2. Valige sisendiks PDF voi TXT fail ja valjundkaust.
+3. Valige ekstraktimise reziim: `pypdfium2` voi `LLM Vision OCR`.
+4. Valige `Piper` voi `Edge TTS`.
+5. Vajadusel laadige alla Piperi mudel.
+6. Kaivitage pipeline chunkide ja lopliku audioraamatu loomiseks.
+
+<a id="et-configuration"></a>
+### Configuration
+
+Pohiseaded salvestatakse faili `config.json`.
+
+Peamised valjad:
+
+- `pdf_path`
+- `txt_path`
+- `output_dir`
+- `mode`
+- `pdf_language`
+- `target_language`
+- `extraction_mode`
+- `tts_provider`
+- `piper_voice`
+- `edge_voice`
+- `llm_provider`
+- `llm_url`
+- `llm_model`
+- `llm_api_key`
+
+Tehnilised markused:
+
+- `pypdfium2` on peamine ekstraktimise ja renderdamise backend.
+- Keerulised lehed voivad langeda tagasi image-based OCR-ile.
+- Tuhje OCR vastuseid proovitakse uuesti.
+- Lopliku MP3 kokkupaneku teeb `ffmpeg`.
+
+<a id="et-tts-providers"></a>
+### TTS Providers
+
+`Piper`
+- kohalik ja offline
+- vajab `piper-tts` ja `.onnx` haalemudelit
+
+`Edge TTS`
+- neuraalsed pilvehaaled
+- lihtne seadistus, vorguuhendus vajalik
+
+<a id="et-supported-languages"></a>
+### Supported Languages
+
+UI keeled:
+- Polski
+- English
+- Deutsch
+- Russkiy
+- Ukrainska
+- Cesky
+- Romana
+- Magyar
+- Francais
+- Espanol
+- Italiano
+- Turkce
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
+
+Audio / tolke sihtkeeled:
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
+
+Lisaks on UI-s saadaval veel PDF lahtekeele koodid.
+
+<a id="et-contributing"></a>
+### Contributing
+
+Issue'd ja pull requestid on teretulnud. Kui voimalik, lisage taastoodetav naide, logid, keskkonna info ja TTS / LLM konfiguratsioon.
+
+<a id="et-license"></a>
+### License
+
+Litsents: `MIT`. Vaadake `LICENSE`.
+
+---
+
+## Latviesu
+
+### Mini TOC
+
+- [Features](#lv-features)
+- [Requirements](#lv-requirements)
+- [Installation](#lv-installation)
+- [Usage](#lv-usage)
+- [Configuration](#lv-configuration)
+- [TTS Providers](#lv-tts-providers)
+- [Supported Languages](#lv-supported-languages)
+- [Contributing](#lv-contributing)
+- [License](#lv-license)
+
+<a id="lv-features"></a>
+### Features
+
+- Python `tkinter` darbvirsmas lietotne `PDF -> audiogramata` un `TXT -> audiogramata`.
+- Galvenie rezimi: `pdf_to_audio`, `translate_to_audio`, `txt_to_audio`.
+- Atra tiesa ekstrakcija ar `pypdfium2`, bez Popplera.
+- `LLM Vision OCR` skenetiem vai sarezgitakiem PDF.
+- OCR retry logika tuksam modela atbildem.
+- Labaka vecu vai slikti kodetu PDF apstrade.
+- Lokals `Piper` TTS un makona `Edge TTS`.
+- Vairakvalodu UI.
+- Iebuveta Piper modelu lejupielades darba plusma.
+- Audio genereisana pa chunkiem ar gala apvienosanu `audiobook_final.mp3`.
+
+<a id="lv-requirements"></a>
+### Requirements
+
+- Python `3.10+`
+- `tkinter`
+- `ffmpeg` `PATH`
+- `piper-tts`
+- `pypdfium2`
+- atkaribas no `requirements.txt`
+- pec izveles `LM Studio` vai cits OpenAI-compatible endpoint Vision OCR / tulkosanai
+
+<a id="lv-installation"></a>
+### Installation
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install pypdfium2 piper-tts
+python app.py
+```
+
+PyInstaller piezimes:
+
+- `--onefile` var but problematisks ar `piper-tts` un `pypdfium2`.
+- Ieteicamais build:
+
+```bash
+pyinstaller --onedir --windowed --name AudiobookForge app.py
+```
+
+<a id="lv-usage"></a>
+### Usage
+
+1. Izvelieties rezimu.
+2. Izvelieties ievades PDF vai TXT failu un izvades mapi.
+3. Izvelieties ekstrakcijas rezimu: `pypdfium2` vai `LLM Vision OCR`.
+4. Izvelieties `Piper` vai `Edge TTS`.
+5. Ja vajag, lejupieladejiet Piper modeli.
+6. Palaidiet pipeline chunku un gala audiogramatas izveidei.
+
+<a id="lv-configuration"></a>
+### Configuration
+
+Galvenie iestatijumi tiek glabati `config.json`.
+
+Svarigakie lauki:
+
+- `pdf_path`
+- `txt_path`
+- `output_dir`
+- `mode`
+- `pdf_language`
+- `target_language`
+- `extraction_mode`
+- `tts_provider`
+- `piper_voice`
+- `edge_voice`
+- `llm_provider`
+- `llm_url`
+- `llm_model`
+- `llm_api_key`
+
+Tehniskas piezimes:
+
+- `pypdfium2` ir galvenais ekstrakcijas un renderesanas backend.
+- Sarezgitas lapas var pariet uz image-based OCR.
+- Tuksas OCR atbildes tiek meginatas velreiz.
+- Gala MP3 apvienosanu veic `ffmpeg`.
+
+<a id="lv-tts-providers"></a>
+### TTS Providers
+
+`Piper`
+- lokals un offline
+- nepieciesams `piper-tts` un `.onnx` balss modelis
+
+`Edge TTS`
+- neironu makona balsis
+- vienkarsa uzstadisana, vajadzigs tikls
+
+<a id="lv-supported-languages"></a>
+### Supported Languages
+
+UI valodas:
+- Polski
+- English
+- Deutsch
+- Russkiy
+- Ukrainska
+- Cesky
+- Romana
+- Magyar
+- Francais
+- Espanol
+- Italiano
+- Turkce
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
+
+Audio / tulkosanas merkvalodas:
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
+
+Papildu PDF avota valodu kodi ir pieejami UI.
+
+<a id="lv-contributing"></a>
+### Contributing
+
+Issues un pull requesti ir gaiditi. Ja iespejams, pievienojiet atkartojamu piemeru, logus, vides informaciju un TTS / LLM konfiguraciju.
+
+<a id="lv-license"></a>
+### License
+
+Licence: `MIT`. Skatiet `LICENSE`.
+
+---
+
+## Lietuviu
+
+### Mini TOC
+
+- [Features](#lt-features)
+- [Requirements](#lt-requirements)
+- [Installation](#lt-installation)
+- [Usage](#lt-usage)
+- [Configuration](#lt-configuration)
+- [TTS Providers](#lt-tts-providers)
+- [Supported Languages](#lt-supported-languages)
+- [Contributing](#lt-contributing)
+- [License](#lt-license)
+
+<a id="lt-features"></a>
+### Features
+
+- Python `tkinter` darbalaukio programa `PDF -> audioknyga` ir `TXT -> audioknyga`.
+- Pagrindiniai rezimai: `pdf_to_audio`, `translate_to_audio`, `txt_to_audio`.
+- Greitas tiesioginis isgavimas su `pypdfium2`, be Poppler.
+- `LLM Vision OCR` nuskenuotiems ar sudetingiems PDF.
+- OCR retry logika tusciems modelio atsakymams.
+- Geresnis senu ar blogai uzkoduotu PDF apdorojimas.
+- Vietinis `Piper` TTS ir debesijos `Edge TTS`.
+- Daugiakalbis UI.
+- Integruotas Piper modeliu atsisiuntimo workflow.
+- Garso generavimas dalimis su galutiniu sujungimu i `audiobook_final.mp3`.
+
+<a id="lt-requirements"></a>
+### Requirements
+
+- Python `3.10+`
+- `tkinter`
+- `ffmpeg` `PATH`
+- `piper-tts`
+- `pypdfium2`
+- priklausomybes is `requirements.txt`
+- pasirenkamai `LM Studio` arba kitas OpenAI-compatible endpoint Vision OCR / vertimui
+
+<a id="lt-installation"></a>
+### Installation
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+pip install pypdfium2 piper-tts
+python app.py
+```
+
+PyInstaller pastabos:
+
+- `--onefile` gali kelti problemu su `piper-tts` ir `pypdfium2`.
+- Rekomenduojamas build:
+
+```bash
+pyinstaller --onedir --windowed --name AudiobookForge app.py
+```
+
+<a id="lt-usage"></a>
+### Usage
+
+1. Pasirinkite rezima.
+2. Pasirinkite ivesties PDF arba TXT faila ir isvesties aplanka.
+3. Pasirinkite isgavimo rezima: `pypdfium2` arba `LLM Vision OCR`.
+4. Pasirinkite `Piper` arba `Edge TTS`.
+5. Jei reikia, atsisiuskite Piper modeli.
+6. Paleiskite pipeline, kad sukurtumete dalis ir galutine audioknyga.
+
+<a id="lt-configuration"></a>
+### Configuration
+
+Pagrindiniai nustatymai saugomi `config.json`.
+
+Svarbiausi laukai:
+
+- `pdf_path`
+- `txt_path`
+- `output_dir`
+- `mode`
+- `pdf_language`
+- `target_language`
+- `extraction_mode`
+- `tts_provider`
+- `piper_voice`
+- `edge_voice`
+- `llm_provider`
+- `llm_url`
+- `llm_model`
+- `llm_api_key`
+
+Technines pastabos:
+
+- `pypdfium2` yra pagrindinis isgavimo ir renderinimo backend.
+- Sudetingi puslapiai gali pereiti i image-based OCR.
+- Tuscios OCR atsakymu uzklausos kartojamos.
+- Galutini MP3 sujungima atlieka `ffmpeg`.
+
+<a id="lt-tts-providers"></a>
+### TTS Providers
+
+`Piper`
+- vietinis ir offline
+- reikia `piper-tts` ir `.onnx` balso modelio
+
+`Edge TTS`
+- neuroniniai debesijos balsai
+- paprastas nustatymas, reikalingas tinklas
+
+<a id="lt-supported-languages"></a>
+### Supported Languages
+
+UI kalbos:
+- Polski
+- English
+- Deutsch
+- Russkiy
+- Ukrainska
+- Cesky
+- Romana
+- Magyar
+- Francais
+- Espanol
+- Italiano
+- Turkce
+- Portugues
+- Nederlands
+- Svenska
+- Suomi
+- Dansk
+- Norsk
+
+Audio / vertimo tikslines kalbos:
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
+
+Papildomi PDF saltinio kalbu kodai pasiekiami UI.
+
+<a id="lt-contributing"></a>
+### Contributing
+
+Issues ir pull requestai laukiami. Jei imanoma, pridekite atkartojama pavyzdi, logus, aplinkos informacija ir TTS / LLM konfiguracija.
+
+<a id="lt-license"></a>
+### License
+
+Licencija: `MIT`. Zr. `LICENSE`.
 
 ---
 

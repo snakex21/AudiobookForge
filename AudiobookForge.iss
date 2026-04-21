@@ -30,8 +30,17 @@ LanguageDetectionMethod=uilanguage
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "polish"; MessagesFile: "compiler:Languages\Polish.isl"
 Name: "czech"; MessagesFile: "compiler:Languages\Czech.isl"
+Name: "slovak"; MessagesFile: "compiler:Languages\Slovak.isl"
+Name: "slovenian"; MessagesFile: "compiler:Languages\Slovenian.isl"
+Name: "croatian"; MessagesFile: "hrv.isl"
 Name: "romanian"; MessagesFile: "Romanian.isl"
 Name: "hungarian"; MessagesFile: "compiler:Languages\Hungarian.isl"
+Name: "catalan"; MessagesFile: "compiler:Languages\Catalan.isl"
+Name: "afrikaans"; MessagesFile: "af.isl"
+Name: "swahili"; MessagesFile: "sw.isl"
+Name: "estonian"; MessagesFile: "est.isl"
+Name: "latvian"; MessagesFile: "lav.isl"
+Name: "lithuanian"; MessagesFile: "lit.isl"
 Name: "finnish"; MessagesFile: "compiler:Languages\Finnish.isl"
 Name: "danish"; MessagesFile: "compiler:Languages\Danish.isl"
 Name: "norwegian"; MessagesFile: "compiler:Languages\Norwegian.isl"
@@ -79,6 +88,18 @@ czech.CreateDesktopShortcut=Vytvořit zástupce na ploše
 czech.AdditionalIcons=Další ikony:
 czech.LaunchProgram=Spustit %1
 
+slovak.CreateDesktopShortcut=Vytvorit zastupcu na pracovnej ploche
+slovak.AdditionalIcons=Dalsie ikony:
+slovak.LaunchProgram=Spustit %1
+
+slovenian.CreateDesktopShortcut=Ustvari bliznjico na namizju
+slovenian.AdditionalIcons=Dodatne ikone:
+slovenian.LaunchProgram=Zazeni %1
+
+croatian.CreateDesktopShortcut=Napravi precac na radnoj povrsini
+croatian.AdditionalIcons=Dodatne ikone:
+croatian.LaunchProgram=Pokreni %1
+
 romanian.CreateDesktopShortcut=Creeaza o scurtatura pe desktop
 romanian.AdditionalIcons=Pictograme suplimentare:
 romanian.LaunchProgram=Lanseaza %1
@@ -86,6 +107,30 @@ romanian.LaunchProgram=Lanseaza %1
 hungarian.CreateDesktopShortcut=Asztali parancsikon letrehozasa
 hungarian.AdditionalIcons=Tovabbi ikonok:
 hungarian.LaunchProgram=%1 inditasa
+
+catalan.CreateDesktopShortcut=Crea una drecera a l'escriptori
+catalan.AdditionalIcons=Icones addicionals:
+catalan.LaunchProgram=Executa %1
+
+afrikaans.CreateDesktopShortcut=Skep 'n lessenaar kortpad
+afrikaans.AdditionalIcons=Bykomende ikone:
+afrikaans.LaunchProgram=Begin %1
+
+swahili.CreateDesktopShortcut=Tengeneza njia ya mkato kwenye desktop
+swahili.AdditionalIcons=Ikoni za ziada:
+swahili.LaunchProgram=Endesha %1
+
+estonian.CreateDesktopShortcut=Loo toolaua otsetee
+estonian.AdditionalIcons=Lisai koonid:
+estonian.LaunchProgram=Kaivita %1
+
+latvian.CreateDesktopShortcut=Izveidot darbvirsmas isceju
+latvian.AdditionalIcons=Papildu ikonas:
+latvian.LaunchProgram=Palaist %1
+
+lithuanian.CreateDesktopShortcut=Sukurti nuoroda darbalaukyje
+lithuanian.AdditionalIcons=Papildomos piktogramos:
+lithuanian.LaunchProgram=Paleisti %1
 
 finnish.CreateDesktopShortcut=Luo pikakuvake tyopoydalle
 finnish.AdditionalIcons=Lisakuvakkeet:
