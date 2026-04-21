@@ -1,8 +1,9 @@
 import unittest
 import tempfile
 import threading
+from pathlib import Path
 
-from pipeline import run_pipeline, should_skip_tts_chunk
+from pipeline import ensure_project_source_copy, run_pipeline, should_skip_tts_chunk
 
 
 class PipelineTests(unittest.TestCase):
@@ -41,6 +42,25 @@ class PipelineTests(unittest.TestCase):
                     threading.Event(),
                     threading.Event(),
                 )
+
+    def test_ensure_project_source_copy_copies_source_into_project(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            source_file = tmp_path / "book.pdf"
+            source_file.write_text("pdf", encoding="utf-8")
+            output_dir = tmp_path / "project"
+
+            config = {
+                "pdf_path": str(source_file),
+                "copy_source_to_project": True,
+            }
+
+            copied_path = ensure_project_source_copy(config, output_dir, lambda _message: None)
+
+            self.assertIsNotNone(copied_path)
+            self.assertTrue(copied_path.exists())
+            self.assertEqual(copied_path.read_text(encoding="utf-8"), "pdf")
+            self.assertEqual(config["project_source_file"], str(copied_path))
 
 
 if __name__ == "__main__":

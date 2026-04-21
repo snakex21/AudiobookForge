@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from ui.state import AppState
+from ui.state import AppState, build_recent_project_entry
 
 
 class AppStateTests(unittest.TestCase):
@@ -32,6 +32,21 @@ class AppStateTests(unittest.TestCase):
 
             self.assertEqual(saved["llm_model"], "test-model")
             self.assertNotIn("_job_start_action", saved)
+
+    def test_recent_project_entry_keeps_project_source_copy(self):
+        entry = build_recent_project_entry(
+            {
+                "mode": "pdf_to_audio",
+                "pdf_path": r"C:\books\book.pdf",
+                "project_source_file": r"C:\projects\book\source\book.pdf",
+                "output_dir": r"C:\projects\book",
+                "copy_source_to_project": True,
+            }
+        )
+
+        self.assertIsNotNone(entry)
+        self.assertEqual(entry["config"]["project_source_file"], r"C:\projects\book\source\book.pdf")
+        self.assertTrue(entry["config"]["copy_source_to_project"])
 
 
 if __name__ == "__main__":

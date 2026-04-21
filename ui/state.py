@@ -31,8 +31,10 @@ RECENT_PROJECT_CONFIG_KEYS = [
     "mode",
     "pdf_path",
     "txt_path",
+    "project_source_file",
     "output_dir",
     "speaker_wav",
+    "copy_source_to_project",
     "pdf_language",
     "target_language",
     "extraction_mode",
@@ -103,10 +105,24 @@ def detect_system_language() -> str:
             return "pl"
         if lowered.startswith("cs") or lowered.startswith("cz"):
             return "cs"
+        if lowered.startswith("sk"):
+            return "slk"
+        if lowered.startswith("sl"):
+            return "slv"
+        if lowered.startswith("hr"):
+            return "hrv"
+        if lowered.startswith("ro"):
+            return "ro"
+        if lowered.startswith("hu"):
+            return "hu"
         if lowered.startswith("de"):
             return "de"
         if lowered.startswith("fr"):
             return "fr"
+        if lowered.startswith("ca"):
+            return "cat"
+        if lowered.startswith("af"):
+            return "af"
         if lowered.startswith("es"):
             return "es"
         if lowered.startswith("it"):
@@ -121,8 +137,20 @@ def detect_system_language() -> str:
             return "pt"
         if lowered.startswith("nl"):
             return "nl"
+        if lowered.startswith("et"):
+            return "est"
+        if lowered.startswith("lv"):
+            return "lav"
+        if lowered.startswith("lt"):
+            return "lit"
         if lowered.startswith("sv"):
             return "sv"
+        if lowered.startswith("fi"):
+            return "fi"
+        if lowered.startswith("da"):
+            return "da"
+        if lowered.startswith("no") or lowered.startswith("nb"):
+            return "no"
     return "en"
 
 
@@ -132,6 +160,8 @@ class AppState:
             "pdf_path": DEFAULT_PDF_PATH,
             "output_dir": DEFAULT_OUTPUT_DIR,
             "speaker_wav": DEFAULT_SPEAKER_WAV,
+            "project_source_file": "",
+            "copy_source_to_project": True,
             "app_language": detect_system_language(),
             "tts_provider": "piper",
             "piper_voice": "",
