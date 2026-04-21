@@ -134,7 +134,7 @@ class AppState:
             "speaker_wav": DEFAULT_SPEAKER_WAV,
             "app_language": detect_system_language(),
             "tts_provider": "piper",
-            "piper_voice": "pl_PL-gosia-medium",
+            "piper_voice": "",
             "piper_download_preset": "pl_PL-gosia-medium",
             "edge_voice": "pl-PL-ZofiaNeural",
             "llm_provider": "lmstudio",
