@@ -72,6 +72,15 @@ AUDIO_LANGUAGE_SETTINGS = {
     "dan": {"language_code": "da", "edge_voice": "da-DK-ChristelNeural"},
     "nor": {"language_code": "nb", "edge_voice": "nb-NO-PernilleNeural"},
     "tur": {"language_code": "tr", "edge_voice": "tr-TR-EmelNeural"},
+    "slk": {"language_code": "sk", "edge_voice": "sk-SK-ViktoriaNeural"},
+    "slv": {"language_code": "sl", "edge_voice": "sl-SI-PetraNeural"},
+    "hrv": {"language_code": "hr", "edge_voice": "hr-HR-GabrijelaNeural"},
+    "cat": {"language_code": "ca", "edge_voice": "ca-ES-JoanaNeural"},
+    "af": {"language_code": "af", "edge_voice": "af-ZA-AdriNeural"},
+    "sw": {"language_code": "sw", "edge_voice": "sw-KE-ZuriNeural"},
+    "est": {"language_code": "et", "edge_voice": "et-EE-AnuNeural"},
+    "lav": {"language_code": "lv", "edge_voice": "lv-LV-EveritaNeural"},
+    "lit": {"language_code": "lt", "edge_voice": "lt-LT-OnaNeural"},
 }
 LANGUAGE_NAMES = {
     "pol": "polski",
@@ -92,6 +101,15 @@ LANGUAGE_NAMES = {
     "dan": "duński",
     "nor": "norweski",
     "tur": "turecki",
+    "slk": "słowacki",
+    "slv": "słoweński",
+    "hrv": "chorwacki",
+    "cat": "kataloński",
+    "af": "afrikaans",
+    "sw": "suahili",
+    "est": "estoński",
+    "lav": "łotewski",
+    "lit": "litewski",
 }
 
 LANGUAGE_PROMPT_NAMES = {
@@ -113,6 +131,15 @@ LANGUAGE_PROMPT_NAMES = {
     "dan": "Danish",
     "nor": "Norwegian",
     "tur": "Turkish",
+    "slk": "Slovak",
+    "slv": "Slovenian",
+    "hrv": "Croatian",
+    "cat": "Catalan",
+    "af": "Afrikaans",
+    "sw": "Swahili",
+    "est": "Estonian",
+    "lav": "Latvian",
+    "lit": "Lithuanian",
 }
 
 LANGUAGE_STOPWORDS = {
@@ -134,6 +161,15 @@ LANGUAGE_STOPWORDS = {
     "dan": {"og", "det", "at", "i", "en", "som", "på", "for", "med", "er", "af", "til", "den", "ikke", "fra", "har"},
     "nor": {"og", "det", "at", "i", "en", "som", "på", "for", "med", "er", "av", "til", "den", "ikke", "fra", "har"},
     "tur": {"ve", "bir", "bu", "için", "ile", "da", "de", "olan", "olarak", "çok", "gibi", "ama", "daha", "mi", "ne", "ya"},
+    "slk": {"a", "v", "z", "na", "je", "sa", "to", "ze", "pre", "s", "do", "ako", "ktore", "ale", "by"},
+    "slv": {"in", "v", "na", "je", "se", "da", "za", "z", "do", "kot", "ki", "ali", "pa", "so", "ob"},
+    "hrv": {"i", "u", "na", "je", "se", "da", "za", "s", "do", "kao", "koji", "ali", "su", "od", "po"},
+    "cat": {"i", "de", "la", "el", "que", "en", "un", "una", "per", "amb", "es", "com", "no", "les", "del"},
+    "af": {"en", "die", "van", "is", "in", "'n", "vir", "met", "op", "dat", "nie", "as", "te", "om", "dit"},
+    "sw": {"na", "ya", "kwa", "katika", "ni", "za", "wa", "la", "ku", "hii", "hiyo", "kama", "lakini", "pia", "ili"},
+    "est": {"ja", "on", "ei", "et", "kui", "oli", "see", "mis", "kas", "ning", "aga", "ka", "oma", "voi", "siis"},
+    "lav": {"un", "ir", "nav", "tas", "ka", "ar", "uz", "par", "no", "kas", "vai", "bet", "lai", "pie", "to"},
+    "lit": {"ir", "kad", "tai", "ne", "su", "suo", "kaip", "del", "ant", "po", "is", "uz", "bet", "jei", "kur"},
 }
 
 
