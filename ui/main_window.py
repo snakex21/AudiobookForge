@@ -1828,7 +1828,7 @@ def run_app():
 
     piper_voice_frame = tk.Frame(tts_frame, bg=BG)
     tk.Label(piper_voice_frame, text=tr("piper_voice"), bg=BG, fg=FG_MUTED, font=FONT).pack(anchor="w", padx=8, pady=(4, 0))
-    voice_var = tk.StringVar(value=state.config.get("piper_voice", "pl_PL-zenski-medium"))
+    voice_var = tk.StringVar(value=state.config.get("piper_voice", ""))
     voice_row = tk.Frame(piper_voice_frame, bg=BG)
     voice_row.pack(fill="x", padx=8, pady=(0, 6))
     voice_combo = ttk.Combobox(
@@ -1852,6 +1852,8 @@ def run_app():
                 state.config.update(piper_voice=models[0])
         else:
             voice_combo["values"] = ["brak modeli - pobierz"]
+            voice_var.set("")
+            state.config.update(piper_voice="")
         return models
 
     tk.Button(
