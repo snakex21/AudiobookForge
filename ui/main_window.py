@@ -1,14 +1,18 @@
 import sys
+import re
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import tkinter as tk
-from tkinter import ttk, filedialog, scrolledtext
+from tkinter import ttk, filedialog, scrolledtext, messagebox
 import threading
 import traceback
-from pipeline import run_pipeline, list_llm_models, LLM_URLS
-from ui.state import state, PROJECT_DIR
+import time
+import json
+import zipfile
+from pipeline import run_pipeline, list_llm_models, LLM_URLS, build_job_signature
+from ui.state import state, PROJECT_DIR, RESOURCE_DIR, CONFIG_PATH
 
 
 BG = "#0d1117"
@@ -257,6 +261,7 @@ TRANSLATIONS = {
         "progress_audio": "Audio",
         "progress_merge": "Merging",
         "console": "Console",
+        "recent_projects": "Recent Projects",
     },
     "de": {
         "app_title": "AUDIOBOOK FORGE v1.0",
@@ -1017,9 +1022,419 @@ UI_RUNTIME_MESSAGES = {
     },
 }
 
+EXTRA_UI_TEXTS = {
+    "pl": {
+        "import_zip_button": "⬆ Import ZIP (config + Piper)",
+        "export_zip_button": "⬇ Eksport ZIP (config + output)",
+        "import_zip_title": "Import ZIP",
+        "export_zip_title": "Eksport ZIP",
+        "import_zip_success_title": "Import ZIP",
+        "export_zip_success_title": "Eksport ZIP",
+        "import_zip_success": "Zaimportowano config: {}\nZaimportowane pliki Piper: {}",
+        "export_zip_success": "Wyeksportowano pliki: {}",
+        "import_zip_error_title": "Błąd importu ZIP",
+        "export_zip_error_title": "Błąd eksportu ZIP",
+        "zip_missing": "ZIP nie zawiera config.json ani plików modelu Piper",
+        "zip_nothing_to_export": "Brak plików do eksportu",
+        "resume_title": "Wznowić poprzednie zadanie",
+        "resume_message": "W wybranym folderze wyjściowym znaleziono zapisane postępy dla tego zadania.\n\n{}\n\nTak = Wznów\nNie = Zacznij od nowa\nAnuluj = Anuluj",
+        "overwrite_title": "Folder wyjściowy jest już używany",
+        "overwrite_message": "Wybrany folder wyjściowy zawiera inne zadanie.\n\n{}\n\nTak = Nadpisz stare zadanie w tym folderze\nNie = Anuluj i wybierz inny folder\nAnuluj = Anuluj",
+        "summary_source": "Źródło: {}",
+        "summary_mode": "Tryb: {}",
+        "summary_pages": "Zapisane strony: {}",
+        "summary_chunks": "Zapisane chunki: {}",
+        "summary_final_audio": "Finalne audio: {}",
+        "yes": "tak",
+        "no": "nie",
+    },
+    "cs": {
+        "import_zip_button": "⬆ Import ZIP (config + Piper)",
+        "export_zip_button": "⬇ Export ZIP (config + output)",
+        "import_zip_title": "Import ZIP",
+        "export_zip_title": "Export ZIP",
+        "import_zip_success_title": "Import ZIP",
+        "export_zip_success_title": "Export ZIP",
+        "import_zip_success": "Importovany config: {}\nImportovane soubory Piper: {}",
+        "export_zip_success": "Exportovane soubory: {}",
+        "import_zip_error_title": "Chyba importu ZIP",
+        "export_zip_error_title": "Chyba exportu ZIP",
+        "zip_missing": "ZIP neobsahuje config.json ani soubory modelu Piper",
+        "zip_nothing_to_export": "Neni co exportovat",
+        "resume_title": "Obnovit předchozí úlohu",
+        "resume_message": "Ve vybrané výstupní složce byl nalezen uložený postup pro tuto úlohu.\n\n{}\n\nAno = Obnovit\nNe = Začít znovu\nZrušit = Zrušit",
+        "overwrite_title": "Výstupní složka je již používána",
+        "overwrite_message": "Vybraná výstupní složka obsahuje jinou úlohu.\n\n{}\n\nAno = Přepsat starou úlohu v této složce\nNe = Zrušit a vybrat jinou složku\nZrušit = Zrušit",
+        "summary_source": "Zdroj: {}",
+        "summary_mode": "Rezim: {}",
+        "summary_pages": "Ulozene strany: {}",
+        "summary_chunks": "Ulozene chunky: {}",
+        "summary_final_audio": "Finalni audio: {}",
+        "yes": "ano",
+        "no": "ne",
+    },
+    "en": {
+        "import_zip_button": "⬆ Import ZIP (config + Piper)",
+        "export_zip_button": "⬇ Export ZIP (config + output)",
+        "import_zip_title": "Import ZIP",
+        "export_zip_title": "Export ZIP",
+        "import_zip_success_title": "Import ZIP",
+        "export_zip_success_title": "Export ZIP",
+        "import_zip_success": "Imported config: {}\nImported Piper files: {}",
+        "export_zip_success": "Exported files: {}",
+        "import_zip_error_title": "ZIP import error",
+        "export_zip_error_title": "ZIP export error",
+        "zip_missing": "ZIP does not contain config.json or Piper model files",
+        "zip_nothing_to_export": "No files available to export",
+        "resume_title": "Resume previous job",
+        "resume_message": "Found existing work for this job in the selected output folder.\n\n{}\n\nYes = Resume\nNo = Start over\nCancel = Cancel",
+        "overwrite_title": "Output folder already used",
+        "overwrite_message": "The selected output folder contains another job.\n\n{}\n\nYes = Overwrite old job in this folder\nNo = Cancel and choose another folder\nCancel = Cancel",
+        "summary_source": "Source: {}",
+        "summary_mode": "Mode: {}",
+        "summary_pages": "Pages saved: {}",
+        "summary_chunks": "Chunks saved: {}",
+        "summary_final_audio": "Final audio: {}",
+        "summary_elapsed": "Elapsed: {}",
+        "summary_stage": "Last stage: {}",
+        "yes": "yes",
+        "no": "no",
+        "recent_empty": "No recent projects yet.",
+        "recent_load": "Load",
+        "recent_open": "Open",
+        "recent_source": "Source: {}",
+        "recent_output": "Output: {}",
+        "recent_status_configured": "Configured",
+        "recent_status_in_progress": "Incomplete",
+        "recent_status_completed": "Completed",
+    },
+    "de": {
+        "import_zip_button": "⬆ ZIP importieren (Config + Piper)",
+        "export_zip_button": "⬇ ZIP exportieren (Config + Output)",
+        "import_zip_title": "ZIP importieren",
+        "export_zip_title": "ZIP exportieren",
+        "import_zip_success_title": "ZIP importieren",
+        "export_zip_success_title": "ZIP exportieren",
+        "import_zip_success": "Importierte Config: {}\nImportierte Piper-Dateien: {}",
+        "export_zip_success": "Exportierte Dateien: {}",
+        "import_zip_error_title": "ZIP-Importfehler",
+        "export_zip_error_title": "ZIP-Exportfehler",
+        "zip_missing": "ZIP enthält weder config.json noch Piper-Modelldateien",
+        "zip_nothing_to_export": "Keine Dateien zum Exportieren vorhanden",
+        "resume_title": "Vorherige Aufgabe fortsetzen",
+        "resume_message": "Im gewählten Ausgabeordner wurde ein gespeicherter Fortschritt für diese Aufgabe gefunden.\n\n{}\n\nJa = Fortsetzen\nNein = Neu starten\nAbbrechen = Abbrechen",
+        "overwrite_title": "Ausgabeordner wird bereits verwendet",
+        "overwrite_message": "Der gewählte Ausgabeordner enthält eine andere Aufgabe.\n\n{}\n\nJa = Alte Aufgabe in diesem Ordner überschreiben\nNein = Abbrechen und anderen Ordner wählen\nAbbrechen = Abbrechen",
+        "summary_source": "Quelle: {}",
+        "summary_mode": "Modus: {}",
+        "summary_pages": "Gespeicherte Seiten: {}",
+        "summary_chunks": "Gespeicherte Chunks: {}",
+        "summary_final_audio": "Finales Audio: {}",
+        "yes": "ja",
+        "no": "nein",
+    },
+    "fr": {
+        "import_zip_button": "⬆ Importer ZIP (config + Piper)",
+        "export_zip_button": "⬇ Exporter ZIP (config + sortie)",
+        "import_zip_title": "Importer ZIP",
+        "export_zip_title": "Exporter ZIP",
+        "import_zip_success_title": "Importer ZIP",
+        "export_zip_success_title": "Exporter ZIP",
+        "import_zip_success": "Config importee : {}\nFichiers Piper importes : {}",
+        "export_zip_success": "Fichiers exportes : {}",
+        "import_zip_error_title": "Erreur d'import ZIP",
+        "export_zip_error_title": "Erreur d'export ZIP",
+        "zip_missing": "Le ZIP ne contient ni config.json ni fichiers de modele Piper",
+        "zip_nothing_to_export": "Aucun fichier a exporter",
+        "resume_title": "Reprendre la tache precedente",
+        "resume_message": "Une progression enregistree pour cette tache a ete trouvee dans le dossier de sortie selectionne.\n\n{}\n\nOui = Reprendre\nNon = Recommencer\nAnnuler = Annuler",
+        "overwrite_title": "Dossier de sortie deja utilise",
+        "overwrite_message": "Le dossier de sortie selectionne contient une autre tache.\n\n{}\n\nOui = Ecraser l'ancienne tache dans ce dossier\nNon = Annuler et choisir un autre dossier\nAnnuler = Annuler",
+        "summary_source": "Source : {}",
+        "summary_mode": "Mode : {}",
+        "summary_pages": "Pages enregistrees : {}",
+        "summary_chunks": "Chunks enregistres : {}",
+        "summary_final_audio": "Audio final : {}",
+        "yes": "oui",
+        "no": "non",
+    },
+    "es": {
+        "import_zip_button": "⬆ Importar ZIP (config + Piper)",
+        "export_zip_button": "⬇ Exportar ZIP (config + salida)",
+        "import_zip_title": "Importar ZIP",
+        "export_zip_title": "Exportar ZIP",
+        "import_zip_success_title": "Importar ZIP",
+        "export_zip_success_title": "Exportar ZIP",
+        "import_zip_success": "Config importada: {}\nArchivos Piper importados: {}",
+        "export_zip_success": "Archivos exportados: {}",
+        "import_zip_error_title": "Error al importar ZIP",
+        "export_zip_error_title": "Error al exportar ZIP",
+        "zip_missing": "El ZIP no contiene config.json ni archivos del modelo Piper",
+        "zip_nothing_to_export": "No hay archivos para exportar",
+        "resume_title": "Reanudar tarea anterior",
+        "resume_message": "Se encontro progreso guardado para esta tarea en la carpeta de salida seleccionada.\n\n{}\n\nSi = Reanudar\nNo = Empezar de nuevo\nCancelar = Cancelar",
+        "overwrite_title": "La carpeta de salida ya esta en uso",
+        "overwrite_message": "La carpeta de salida seleccionada contiene otra tarea.\n\n{}\n\nSi = Sobrescribir la tarea antigua en esta carpeta\nNo = Cancelar y elegir otra carpeta\nCancelar = Cancelar",
+        "summary_source": "Origen: {}",
+        "summary_mode": "Modo: {}",
+        "summary_pages": "Paginas guardadas: {}",
+        "summary_chunks": "Chunks guardados: {}",
+        "summary_final_audio": "Audio final: {}",
+        "yes": "si",
+        "no": "no",
+    },
+    "it": {
+        "import_zip_button": "⬆ Importa ZIP (config + Piper)",
+        "export_zip_button": "⬇ Esporta ZIP (config + output)",
+        "import_zip_title": "Importa ZIP",
+        "export_zip_title": "Esporta ZIP",
+        "import_zip_success_title": "Importa ZIP",
+        "export_zip_success_title": "Esporta ZIP",
+        "import_zip_success": "Config importata: {}\nFile Piper importati: {}",
+        "export_zip_success": "File esportati: {}",
+        "import_zip_error_title": "Errore import ZIP",
+        "export_zip_error_title": "Errore export ZIP",
+        "zip_missing": "Lo ZIP non contiene config.json ne file del modello Piper",
+        "zip_nothing_to_export": "Nessun file da esportare",
+        "resume_title": "Riprendi attività precedente",
+        "resume_message": "Nel percorso di output selezionato e stato trovato un avanzamento salvato per questa attivita.\n\n{}\n\nSi = Riprendi\nNo = Ricomincia\nAnnulla = Annulla",
+        "overwrite_title": "Cartella di output gia usata",
+        "overwrite_message": "La cartella di output selezionata contiene un'altra attivita.\n\n{}\n\nSi = Sovrascrivi la vecchia attivita in questa cartella\nNo = Annulla e scegli un'altra cartella\nAnnulla = Annulla",
+        "summary_source": "Origine: {}",
+        "summary_mode": "Modalita: {}",
+        "summary_pages": "Pagine salvate: {}",
+        "summary_chunks": "Chunk salvati: {}",
+        "summary_final_audio": "Audio finale: {}",
+        "yes": "si",
+        "no": "no",
+    },
+    "ru": {
+        "import_zip_button": "⬆ Import ZIP (config + Piper)",
+        "export_zip_button": "⬇ Export ZIP (config + output)",
+        "import_zip_title": "Import ZIP",
+        "export_zip_title": "Export ZIP",
+        "import_zip_success_title": "Import ZIP",
+        "export_zip_success_title": "Export ZIP",
+        "import_zip_success": "Importirovan config: {}\nImportirovano failov Piper: {}",
+        "export_zip_success": "Eksportirovano failov: {}",
+        "import_zip_error_title": "Oshibka importa ZIP",
+        "export_zip_error_title": "Oshibka eksporta ZIP",
+        "zip_missing": "ZIP ne soderzhit config.json ili failov modeli Piper",
+        "zip_nothing_to_export": "Net failov dlya eksporta",
+        "resume_title": "Prodolzhit predydushchuyu zadachu",
+        "resume_message": "V vybrannoy papke vyvoda nayden sohranennyy progress dlya etoy zadachi.\n\n{}\n\nDa = Prodolzhit\nNet = Nachat zanovo\nOtmena = Otmena",
+        "overwrite_title": "Papka vyvoda uzhe ispolzuetsya",
+        "overwrite_message": "Vybrannaya papka vyvoda soderzhit druguyu zadachu.\n\n{}\n\nDa = Perepisat staruyu zadachu v etoy papke\nNet = Otmenit i vybrat druguyu papku\nOtmena = Otmena",
+        "summary_source": "Istochnik: {}",
+        "summary_mode": "Rezhim: {}",
+        "summary_pages": "Sohraneno stranits: {}",
+        "summary_chunks": "Sohraneno chunkov: {}",
+        "summary_final_audio": "Finalnoe audio: {}",
+        "yes": "da",
+        "no": "net",
+    },
+    "uk": {
+        "import_zip_button": "⬆ Import ZIP (config + Piper)",
+        "export_zip_button": "⬇ Export ZIP (config + output)",
+        "import_zip_title": "Import ZIP",
+        "export_zip_title": "Export ZIP",
+        "import_zip_success_title": "Import ZIP",
+        "export_zip_success_title": "Export ZIP",
+        "import_zip_success": "Importovano config: {}\nImportovano failiv Piper: {}",
+        "export_zip_success": "Eksportovano failiv: {}",
+        "import_zip_error_title": "Pomylka importu ZIP",
+        "export_zip_error_title": "Pomylka eksportu ZIP",
+        "zip_missing": "ZIP ne mistyt config.json abo fayliv modeli Piper",
+        "zip_nothing_to_export": "Nemaie failiv dlya eksportu",
+        "resume_title": "Vidnovyty poperednye zavdannya",
+        "resume_message": "U vybranij tektsi vyvodu znaydeno zberezhenyj progres dlya tsogo zavdannya.\n\n{}\n\nTak = Vidnovyty\nNi = Pochaty znovu\nSkasuvaty = Skasuvaty",
+        "overwrite_title": "Teku vyvodu uzhe vykorystano",
+        "overwrite_message": "Vybrana teka vyvodu mistyt inshe zavdannya.\n\n{}\n\nTak = Perekryty stare zavdannya u tsiy teci\nNi = Skasuvaty i vybraty inshu teku\nSkasuvaty = Skasuvaty",
+        "summary_source": "Dzherelo: {}",
+        "summary_mode": "Rezhym: {}",
+        "summary_pages": "Zberezheno storinok: {}",
+        "summary_chunks": "Zberezheno chunkiv: {}",
+        "summary_final_audio": "Finalne audio: {}",
+        "yes": "tak",
+        "no": "ni",
+    },
+    "tr": {
+        "import_zip_button": "⬆ ZIP Ice Aktar (config + Piper)",
+        "export_zip_button": "⬇ ZIP Disa Aktar (config + output)",
+        "import_zip_title": "ZIP Ice Aktar",
+        "export_zip_title": "ZIP Disa Aktar",
+        "import_zip_success_title": "ZIP Ice Aktar",
+        "export_zip_success_title": "ZIP Disa Aktar",
+        "import_zip_success": "Ice aktarilan config: {}\nIce aktarilan Piper dosyalari: {}",
+        "export_zip_success": "Disa aktarilan dosyalar: {}",
+        "import_zip_error_title": "ZIP ice aktarma hatasi",
+        "export_zip_error_title": "ZIP disa aktarma hatasi",
+        "zip_missing": "ZIP, config.json veya Piper model dosyalari icermiyor",
+        "zip_nothing_to_export": "Disa aktarilacak dosya yok",
+        "resume_title": "Onceki goreve devam et",
+        "resume_message": "Secilen cikti klasorunde bu gorev icin kayitli ilerleme bulundu.\n\n{}\n\nEvet = Devam et\nHayir = Bastan basla\nIptal = Iptal",
+        "overwrite_title": "Cikti klasoru zaten kullaniliyor",
+        "overwrite_message": "Secilen cikti klasoru baska bir gorev iceriyor.\n\n{}\n\nEvet = Bu klasordeki eski gorevin ustune yaz\nHayir = Iptal et ve baska klasor sec\nIptal = Iptal",
+        "summary_source": "Kaynak: {}",
+        "summary_mode": "Mod: {}",
+        "summary_pages": "Kaydedilen sayfa: {}",
+        "summary_chunks": "Kaydedilen chunk: {}",
+        "summary_final_audio": "Final ses: {}",
+        "yes": "evet",
+        "no": "hayir",
+    },
+    "pt": {
+        "import_zip_button": "⬆ Importar ZIP (config + Piper)",
+        "export_zip_button": "⬇ Exportar ZIP (config + saida)",
+        "import_zip_title": "Importar ZIP",
+        "export_zip_title": "Exportar ZIP",
+        "import_zip_success_title": "Importar ZIP",
+        "export_zip_success_title": "Exportar ZIP",
+        "import_zip_success": "Config importada: {}\nArquivos Piper importados: {}",
+        "export_zip_success": "Arquivos exportados: {}",
+        "import_zip_error_title": "Erro de importacao ZIP",
+        "export_zip_error_title": "Erro de exportacao ZIP",
+        "zip_missing": "O ZIP nao contem config.json nem arquivos do modelo Piper",
+        "zip_nothing_to_export": "Nao ha arquivos para exportar",
+        "resume_title": "Retomar tarefa anterior",
+        "resume_message": "Foi encontrado progresso salvo para esta tarefa na pasta de saida selecionada.\n\n{}\n\nSim = Retomar\nNao = Recomeçar\nCancelar = Cancelar",
+        "overwrite_title": "A pasta de saida ja esta em uso",
+        "overwrite_message": "A pasta de saida selecionada contem outra tarefa.\n\n{}\n\nSim = Sobrescrever a tarefa antiga nesta pasta\nNao = Cancelar e escolher outra pasta\nCancelar = Cancelar",
+        "summary_source": "Fonte: {}",
+        "summary_mode": "Modo: {}",
+        "summary_pages": "Paginas salvas: {}",
+        "summary_chunks": "Chunks salvos: {}",
+        "summary_final_audio": "Audio final: {}",
+        "yes": "sim",
+        "no": "nao",
+    },
+    "nl": {
+        "import_zip_button": "⬆ ZIP importeren (config + Piper)",
+        "export_zip_button": "⬇ ZIP exporteren (config + output)",
+        "import_zip_title": "ZIP importeren",
+        "export_zip_title": "ZIP exporteren",
+        "import_zip_success_title": "ZIP importeren",
+        "export_zip_success_title": "ZIP exporteren",
+        "import_zip_success": "Geimporteerde config: {}\nGeimporteerde Piper-bestanden: {}",
+        "export_zip_success": "Geexporteerde bestanden: {}",
+        "import_zip_error_title": "ZIP-importfout",
+        "export_zip_error_title": "ZIP-exportfout",
+        "zip_missing": "ZIP bevat geen config.json of Piper-modelbestanden",
+        "zip_nothing_to_export": "Geen bestanden om te exporteren",
+        "resume_title": "Vorige taak hervatten",
+        "resume_message": "Er is opgeslagen voortgang voor deze taak gevonden in de geselecteerde uitvoermap.\n\n{}\n\nJa = Hervatten\nNee = Opnieuw beginnen\nAnnuleren = Annuleren",
+        "overwrite_title": "Uitvoermap wordt al gebruikt",
+        "overwrite_message": "De geselecteerde uitvoermap bevat een andere taak.\n\n{}\n\nJa = Oude taak in deze map overschrijven\nNee = Annuleren en andere map kiezen\nAnnuleren = Annuleren",
+        "summary_source": "Bron: {}",
+        "summary_mode": "Modus: {}",
+        "summary_pages": "Opgeslagen pagina's: {}",
+        "summary_chunks": "Opgeslagen chunks: {}",
+        "summary_final_audio": "Definitieve audio: {}",
+        "yes": "ja",
+        "no": "nee",
+    },
+    "sv": {
+        "import_zip_button": "⬆ Importera ZIP (config + Piper)",
+        "export_zip_button": "⬇ Exportera ZIP (config + output)",
+        "import_zip_title": "Importera ZIP",
+        "export_zip_title": "Exportera ZIP",
+        "import_zip_success_title": "Importera ZIP",
+        "export_zip_success_title": "Exportera ZIP",
+        "import_zip_success": "Importerad config: {}\nImporterade Piper-filer: {}",
+        "export_zip_success": "Exporterade filer: {}",
+        "import_zip_error_title": "ZIP-importfel",
+        "export_zip_error_title": "ZIP-exportfel",
+        "zip_missing": "ZIP innehaller inte config.json eller Piper-modellfiler",
+        "zip_nothing_to_export": "Inga filer att exportera",
+        "resume_title": "Ateruppta foregaende jobb",
+        "resume_message": "Sparat framsteg for detta jobb hittades i den valda utdatamappen.\n\n{}\n\nJa = Ateruppta\nNej = Starta om\nAvbryt = Avbryt",
+        "overwrite_title": "Utdatamappen används redan",
+        "overwrite_message": "Den valda utdatamappen innehaller ett annat jobb.\n\n{}\n\nJa = Skriv over det gamla jobbet i denna mapp\nNej = Avbryt och valj en annan mapp\nAvbryt = Avbryt",
+        "summary_source": "Kalla: {}",
+        "summary_mode": "Lage: {}",
+        "summary_pages": "Sparade sidor: {}",
+        "summary_chunks": "Sparade chunkar: {}",
+        "summary_final_audio": "Slutligt ljud: {}",
+        "yes": "ja",
+        "no": "nej",
+    },
+}
+
 
 def run_app():
     current_lang = state.config.get("app_language", "pl")
+
+    def sanitize_job_name(name: str) -> str:
+        cleaned = re.sub(r'[<>:"/\\|?*]+', '_', name).strip().strip('.')
+        return cleaned or "job"
+
+    def get_suggested_output_dir(source_path: str) -> Path:
+        source = Path(source_path) if source_path else None
+        job_name = sanitize_job_name(source.stem) if source_path else "audiobook_job"
+        return PROJECT_DIR / "audiobook_output" / job_name
+
+    def resolve_output_dir(value: str) -> Path:
+        candidate = Path(value) if value else PROJECT_DIR / "audiobook_output"
+        return candidate if candidate.is_absolute() else PROJECT_DIR / candidate
+
+    def summarize_existing_job(output_dir: Path) -> tuple[dict | None, str]:
+        state_file = output_dir / "job_state.json"
+        if not state_file.exists():
+            return None, ""
+        try:
+            with open(state_file, "r", encoding="utf-8") as handle:
+                previous_state = json.load(handle)
+        except Exception:
+            return None, ""
+
+        output_file = output_dir / "output.txt"
+        chunks_dir = output_dir / "chunks"
+        page_count = 0
+        if output_file.exists():
+            try:
+                page_count = output_file.read_text(encoding="utf-8").count("=== Strona")
+            except Exception:
+                page_count = 0
+        chunk_count = len(list(chunks_dir.glob("chunk_*.mp3"))) if chunks_dir.exists() else 0
+        final_exists = (output_dir / "audiobook_final.mp3").exists()
+        pipeline_stats = None
+        stats_file = output_dir / "pipeline_stats.json"
+        if stats_file.exists():
+            try:
+                with open(stats_file, "r", encoding="utf-8") as handle:
+                    pipeline_stats = json.load(handle)
+            except Exception:
+                pipeline_stats = None
+        source_name = Path(previous_state.get("pdf_path") or previous_state.get("txt_path") or "").name or "unknown"
+        summary_lines = [
+            tr_extra('summary_source', source_name),
+            tr_extra('summary_mode', previous_state.get('mode', 'unknown')),
+            tr_extra('summary_pages', page_count),
+            tr_extra('summary_chunks', chunk_count),
+            tr_extra('summary_final_audio', tr_extra('yes') if final_exists else tr_extra('no')),
+        ]
+        if pipeline_stats:
+            summary_lines.append(tr_extra("summary_elapsed", format_duration(pipeline_stats.get("elapsed_seconds", 0))))
+            current_stage = pipeline_stats.get("current_stage") or ("done" if pipeline_stats.get("completed") else "-")
+            summary_lines.append(tr_extra("summary_stage", current_stage))
+        summary = "\n".join(summary_lines)
+        return previous_state, summary
+
+    def get_recent_project_status(project: dict) -> str:
+        output_dir_value = project.get("output_dir") or project.get("config", {}).get("output_dir", "")
+        output_dir = resolve_output_dir(output_dir_value)
+        if (output_dir / "audiobook_final.mp3").exists():
+            return "completed"
+        if (output_dir / "job_state.json").exists():
+            return "in_progress"
+        return project.get("status", "configured")
+
+    def remember_current_project(status: str | None = None):
+        state.remember_recent_project(state.config, status=status)
+
+    def persist_current_config(status: str | None = None):
+        remember_current_project(status=status)
+        state.save()
 
     def tr(key: str) -> str:
         return TRANSLATIONS.get(current_lang, TRANSLATIONS["en"]).get(key, key)
@@ -1030,10 +1445,16 @@ def run_app():
         )
         return template.format(*args)
 
+    def tr_extra(key: str, *args) -> str:
+        template = EXTRA_UI_TEXTS.get(current_lang, EXTRA_UI_TEXTS["en"]).get(
+            key, EXTRA_UI_TEXTS["en"].get(key, key)
+        )
+        return template.format(*args)
+
     root = tk.Tk()
     root.title("AudiobookForge v1.0")
-    icon_ico_path = PROJECT_DIR / "assets" / "app_icon.ico"
-    icon_png_path = PROJECT_DIR / "assets" / "app_icon.png"
+    icon_ico_path = RESOURCE_DIR / "assets" / "app_icon.ico"
+    icon_png_path = RESOURCE_DIR / "assets" / "app_icon.png"
     try:
         import ctypes
 
@@ -1042,7 +1463,7 @@ def run_app():
         pass
     if icon_ico_path.exists():
         try:
-            root.iconbitmap(default=str(icon_ico_path))
+            root.iconbitmap(str(icon_ico_path))
             root.wm_iconbitmap(str(icon_ico_path))
         except Exception:
             pass
@@ -1096,23 +1517,95 @@ def run_app():
     content = tk.Frame(root, bg=BG)
     content.pack(fill="both", expand=True, padx=16, pady=16)
 
-    left = tk.Frame(content, bg=BG, width=380)
-    left.pack(side="left", fill="y", padx=(0, 12))
-    left.pack_propagate(False)
+    left_container = tk.Frame(content, bg=BG, width=396)
+    left_container.pack(side="left", fill="y", padx=(0, 12))
+    left_container.pack_propagate(False)
+
+    left_canvas = tk.Canvas(left_container, bg=BG, highlightthickness=0, bd=0)
+    left_scrollbar = ttk.Scrollbar(left_container, orient="vertical", command=left_canvas.yview)
+    left_canvas.configure(yscrollcommand=left_scrollbar.set)
+    left_canvas.pack(side="left", fill="both", expand=True)
+
+    left = tk.Frame(left_canvas, bg=BG)
+    left_window = left_canvas.create_window((0, 0), window=left, anchor="nw")
+    section_state = state.config.setdefault("ui_sections", {})
+
+    def update_left_scrollbar_visibility():
+        bbox = left_canvas.bbox("all")
+        content_height = bbox[3] - bbox[1] if bbox else 0
+        visible_height = left_canvas.winfo_height()
+        needs_scrollbar = content_height > visible_height + 1
+        if needs_scrollbar and not left_scrollbar.winfo_ismapped():
+            left_scrollbar.pack(side="right", fill="y")
+        elif not needs_scrollbar and left_scrollbar.winfo_ismapped():
+            left_scrollbar.pack_forget()
+
+    def update_left_scrollregion(_event=None):
+        left_canvas.configure(scrollregion=left_canvas.bbox("all"))
+        root.after_idle(update_left_scrollbar_visibility)
+
+    def update_left_width(event):
+        left_canvas.itemconfigure(left_window, width=event.width)
+        root.after_idle(update_left_scrollbar_visibility)
+
+    def on_left_mousewheel(event):
+        left_canvas.yview_scroll(int(-event.delta / 120), "units")
+
+    def bind_left_mousewheel(_event):
+        left_canvas.bind_all("<MouseWheel>", on_left_mousewheel)
+
+    def unbind_left_mousewheel(_event):
+        left_canvas.unbind_all("<MouseWheel>")
+
+    left.bind("<Configure>", update_left_scrollregion)
+    left_canvas.bind("<Configure>", update_left_width)
+    left.bind("<Enter>", bind_left_mousewheel)
+    left.bind("<Leave>", unbind_left_mousewheel)
+    left_canvas.bind("<Enter>", bind_left_mousewheel)
+    left_canvas.bind("<Leave>", unbind_left_mousewheel)
+
+    def create_collapsible_section(parent, section_id: str, title: str):
+        outer = tk.Frame(parent, bg=BG, bd=1, relief="solid")
+        title_var = tk.StringVar()
+        body = tk.Frame(outer, bg=BG)
+
+        def apply_state(save_state: bool = False):
+            expanded = section_state.get(section_id, True)
+            title_var.set(f"{'▼' if expanded else '▶'} {title}")
+            if expanded:
+                body.pack(fill="x", padx=0, pady=0)
+            else:
+                body.pack_forget()
+            if save_state:
+                state.save()
+            root.after_idle(update_left_scrollregion)
+
+        def toggle():
+            section_state[section_id] = not section_state.get(section_id, True)
+            apply_state(save_state=True)
+
+        header = tk.Button(
+            outer,
+            textvariable=title_var,
+            bg=BG2,
+            fg=ACCENT,
+            font=FONT,
+            relief="flat",
+            anchor="w",
+            cursor="hand2",
+            activebackground=BG2,
+            activeforeground=ACCENT,
+            command=toggle,
+        )
+        header.pack(fill="x", padx=1, pady=1)
+        apply_state()
+        return outer, body
 
     right = tk.Frame(content, bg=BG)
     right.pack(side="left", fill="both", expand=True)
 
-    mode_frame = tk.LabelFrame(
-        left,
-        text=tr("work_mode"),
-        bg=BG,
-        fg=ACCENT,
-        font=FONT,
-        bd=1,
-        relief="solid",
-    )
-    mode_frame.pack(fill="x", pady=(0, 8))
+    mode_section, mode_frame = create_collapsible_section(left, "work_mode", tr("work_mode"))
+    mode_section.pack(fill="x", pady=(0, 8))
 
     mode_var = tk.StringVar(value=state.config.get("mode", "pdf_to_audio"))
     modes = [
@@ -1134,16 +1627,8 @@ def run_app():
             font=FONT,
         ).pack(anchor="w", padx=8, pady=2)
 
-    files_frame = tk.LabelFrame(
-        left,
-        text=tr("source_files"),
-        bg=BG,
-        fg=ACCENT,
-        font=FONT,
-        bd=1,
-        relief="solid",
-    )
-    files_frame.pack(fill="x", pady=(0, 8))
+    files_section, files_frame = create_collapsible_section(left, "source_files", tr("source_files"))
+    files_section.pack(fill="x", pady=(0, 8))
 
     def make_path_row(parent, label, config_key, filetype=None):
         tk.Label(parent, text=label, bg=BG, fg=FG_MUTED, font=FONT).pack(anchor="w", padx=8, pady=(6, 0))
@@ -1222,9 +1707,10 @@ def run_app():
             )
             if path:
                 state.config["txt_path"] = path
-                state.config["output_dir"] = str(Path(path).parent)
+                suggested_output_dir = str(get_suggested_output_dir(path))
+                state.config["output_dir"] = suggested_output_dir
                 source_var.set(path)
-                output_dir_var.set(state.config["output_dir"])
+                output_dir_var.set(suggested_output_dir)
         else:
             path = filedialog.askopenfilename(
                 title=tr("pdf_file"),
@@ -1233,6 +1719,9 @@ def run_app():
             if path:
                 state.config["pdf_path"] = path
                 source_var.set(path)
+                suggested_output_dir = str(get_suggested_output_dir(path))
+                state.config["output_dir"] = suggested_output_dir
+                output_dir_var.set(suggested_output_dir)
 
     tk.Button(
         source_row,
@@ -1247,16 +1736,25 @@ def run_app():
 
     output_dir_var = make_path_row(files_frame, tr("output_dir"), "output_dir", "folder")
 
-    lang_frame = tk.LabelFrame(
-        left,
-        text=tr("pdf_settings"),
-        bg=BG,
-        fg=ACCENT,
-        font=FONT,
-        bd=1,
-        relief="solid",
-    )
-    lang_frame.pack(fill="x", pady=(0, 8))
+    if not state.config.get("output_dir"):
+        initial_source_path = state.config.get("txt_path") if mode_var.get() == "txt_to_audio" else state.config.get("pdf_path")
+        if initial_source_path:
+            output_dir_var.set(str(get_suggested_output_dir(initial_source_path)))
+
+    recent_section, recent_frame = create_collapsible_section(left, "recent_projects", tr("recent_projects"))
+    recent_section.pack(fill="x", pady=(0, 8))
+
+    def update_source_config(*_):
+        current_path = source_var.get().strip()
+        if mode_var.get() == "txt_to_audio":
+            state.config["txt_path"] = current_path
+        else:
+            state.config["pdf_path"] = current_path
+
+    source_var.trace_add("write", update_source_config)
+
+    lang_section, lang_frame = create_collapsible_section(left, "pdf_settings", tr("pdf_settings"))
+    lang_section.pack(fill="x", pady=(0, 8))
 
     tk.Label(lang_frame, text=tr("pdf_language"), bg=BG, fg=FG_MUTED, font=FONT).pack(anchor="w", padx=8, pady=(6, 0))
     lang_var = tk.StringVar(value=state.config.get("pdf_language", "pol"))
@@ -1284,16 +1782,8 @@ def run_app():
     target_lang_combo.pack(fill="x", padx=8, pady=(0, 6))
     target_lang_var.trace_add("write", lambda *_: state.config.update(target_language=target_lang_var.get()))
 
-    extraction_frame = tk.LabelFrame(
-        left,
-        text=tr("text_extraction"),
-        bg=BG,
-        fg=ACCENT,
-        font=FONT,
-        bd=1,
-        relief="solid",
-    )
-    extraction_frame.pack(fill="x", pady=(0, 8))
+    extraction_section, extraction_frame = create_collapsible_section(left, "text_extraction", tr("text_extraction"))
+    extraction_section.pack(fill="x", pady=(0, 8))
 
     ocr_var = tk.StringVar(value=state.config.get("extraction_mode", "pypdfium"))
     tk.Radiobutton(
@@ -1321,16 +1811,8 @@ def run_app():
         command=lambda: state.config.update(extraction_mode="llm_vision"),
     ).pack(anchor="w", padx=16, pady=(0, 6))
 
-    tts_frame = tk.LabelFrame(
-        left,
-        text=tr("tts"),
-        bg=BG,
-        fg=ACCENT,
-        font=FONT,
-        bd=1,
-        relief="solid",
-    )
-    tts_frame.pack(fill="x", pady=(0, 8))
+    tts_section, tts_frame = create_collapsible_section(left, "tts", tr("tts"))
+    tts_section.pack(fill="x", pady=(0, 8))
 
     tk.Label(tts_frame, text=tr("provider"), bg=BG, fg=FG_MUTED, font=FONT).pack(anchor="w", padx=8, pady=(6, 0))
     tts_var = tk.StringVar(value=state.config.get("tts_provider", "piper"))
@@ -1409,31 +1891,34 @@ def run_app():
     piper_preset_combo.pack(fill="x", padx=8, pady=(0, 6))
     piper_preset_var.trace_add("write", lambda *_: state.config.update(piper_download_preset=piper_preset_var.get()))
 
+    speaker_sample_frame = tk.Frame(tts_frame, bg=BG)
+    speaker_wav_var = make_path_row(speaker_sample_frame, tr("speaker_sample"), "speaker_wav", "wav")
+
+    tts_visibility_widgets = {}
+
     def update_tts_voice_visibility(*_):
         provider = tts_var.get()
         piper_voice_frame.pack_forget()
         edge_voice_frame.pack_forget()
         piper_download_frame.pack_forget()
+        speaker_sample_frame.pack_forget()
+        download_button = tts_visibility_widgets.get("download_piper_btn")
+        if download_button:
+            download_button.pack_forget()
         if provider == "piper":
             piper_voice_frame.pack(fill="x")
             piper_download_frame.pack(fill="x")
+            if download_button:
+                download_button.pack(fill="x", pady=2)
         elif provider == "edge_tts":
             edge_voice_frame.pack(fill="x")
+        elif provider == "chatterbox":
+            speaker_sample_frame.pack(fill="x")
 
     tts_var.trace_add("write", update_tts_voice_visibility)
 
-    make_path_row(tts_frame, tr("speaker_sample"), "speaker_wav", "wav")
-
-    llm_frame = tk.LabelFrame(
-        left,
-        text=tr("llm"),
-        bg=BG,
-        fg=ACCENT,
-        font=FONT,
-        bd=1,
-        relief="solid",
-    )
-    llm_frame.pack(fill="x", pady=(0, 8))
+    llm_section, llm_frame = create_collapsible_section(left, "llm", tr("llm"))
+    llm_section.pack(fill="x", pady=(0, 8))
 
     tk.Label(llm_frame, text=tr("provider"), bg=BG, fg=FG_MUTED, font=FONT).pack(anchor="w", padx=8, pady=(6, 0))
     llm_provider_var = tk.StringVar(value=state.config.get("llm_provider", "lmstudio"))
@@ -1486,22 +1971,25 @@ def run_app():
         state.config.update(mode=mode)
         sync_source_field()
 
-        lang_frame.pack_forget()
-        extraction_frame.pack_forget()
-        llm_frame.pack_forget()
+        lang_section.pack_forget()
+        extraction_section.pack_forget()
+        llm_section.pack_forget()
         target_lang_frame.pack_forget()
 
         if mode == "txt_to_audio":
+            root.after_idle(update_left_scrollregion)
             return
         if mode == "pdf_to_audio":
-            lang_frame.pack(fill="x", pady=(0, 8), before=tts_frame)
-            extraction_frame.pack(fill="x", pady=(0, 8), before=tts_frame)
+            lang_section.pack(fill="x", pady=(0, 8), before=tts_section)
+            extraction_section.pack(fill="x", pady=(0, 8), before=tts_section)
+            root.after_idle(update_left_scrollregion)
             return
 
-        lang_frame.pack(fill="x", pady=(0, 8), before=tts_frame)
+        lang_section.pack(fill="x", pady=(0, 8), before=tts_section)
         target_lang_frame.pack(fill="x")
-        extraction_frame.pack(fill="x", pady=(0, 8), before=tts_frame)
-        llm_frame.pack(fill="x", pady=(0, 8), before=btn_frame)
+        extraction_section.pack(fill="x", pady=(0, 8), before=tts_section)
+        llm_section.pack(fill="x", pady=(0, 8), before=btn_frame)
+        root.after_idle(update_left_scrollregion)
 
     mode_var.trace_add("write", update_mode)
 
@@ -1516,6 +2004,141 @@ def run_app():
     )
     model_combo.pack(fill="x", padx=8, pady=(0, 4))
     model_var.trace_add("write", lambda *_: state.config.update(llm_model=model_var.get()))
+
+    def open_output_folder(output_path: str | Path | None = None):
+        import subprocess
+
+        output = resolve_output_dir(str(output_path) if output_path else state.config.get("output_dir", ""))
+        output.mkdir(parents=True, exist_ok=True)
+        subprocess.Popen(f'explorer "{output}"')
+
+    def load_recent_project(project: dict):
+        saved_config = dict(project.get("config") or {})
+        if not saved_config:
+            return
+
+        for key, value in saved_config.items():
+            state.config[key] = value
+
+        mode_var.set(saved_config.get("mode", "pdf_to_audio"))
+        output_dir_var.set(saved_config.get("output_dir", ""))
+        lang_var.set(saved_config.get("pdf_language", "pol"))
+        target_lang_var.set(saved_config.get("target_language", "pol"))
+        ocr_var.set(saved_config.get("extraction_mode", "pypdfium"))
+        tts_var.set(saved_config.get("tts_provider", "piper"))
+        voice_var.set(saved_config.get("piper_voice", state.config.get("piper_voice", "")))
+        edge_voice_var.set(saved_config.get("edge_voice", "pl-PL-ZofiaNeural"))
+        piper_preset_var.set(saved_config.get("piper_download_preset", "pl_PL-gosia-medium"))
+        speaker_wav_var.set(saved_config.get("speaker_wav", ""))
+        llm_provider_var.set(saved_config.get("llm_provider", "lmstudio"))
+        url_var.set(saved_config.get("llm_url", LLM_URLS.get(saved_config.get("llm_provider", "lmstudio"), "")))
+        model_var.set(saved_config.get("llm_model", ""))
+
+        if saved_config.get("mode") == "txt_to_audio":
+            source_var.set(saved_config.get("txt_path", ""))
+        else:
+            source_var.set(saved_config.get("pdf_path", ""))
+
+        persist_current_config(status=get_recent_project_status(project))
+        render_recent_projects()
+
+    def render_recent_projects():
+        for child in recent_frame.winfo_children():
+            child.destroy()
+
+        projects = state.config.get("recent_projects", [])
+        if not projects:
+            tk.Label(
+                recent_frame,
+                text=tr_extra("recent_empty"),
+                bg=BG,
+                fg=FG_MUTED,
+                font=FONT,
+                anchor="w",
+                justify="left",
+            ).pack(fill="x", padx=8, pady=8)
+            root.after_idle(update_left_scrollregion)
+            return
+
+        status_labels = {
+            "configured": tr_extra("recent_status_configured"),
+            "in_progress": tr_extra("recent_status_in_progress"),
+            "completed": tr_extra("recent_status_completed"),
+        }
+
+        for project in projects:
+            project_status = get_recent_project_status(project)
+            source_path = project.get("source_path") or project.get("config", {}).get("txt_path") or project.get("config", {}).get("pdf_path") or ""
+            source_name = Path(source_path).name if source_path else project.get("name", "project")
+            output_dir = project.get("output_dir") or project.get("config", {}).get("output_dir", "")
+
+            card = tk.Frame(recent_frame, bg=BG2, bd=1, relief="solid")
+            card.pack(fill="x", padx=8, pady=(6, 0))
+
+            header = tk.Frame(card, bg=BG2)
+            header.pack(fill="x", padx=8, pady=(8, 2))
+            tk.Label(
+                header,
+                text=source_name,
+                bg=BG2,
+                fg=FG,
+                font=FONT_TITLE,
+                anchor="w",
+            ).pack(side="left", fill="x", expand=True)
+            tk.Label(
+                header,
+                text=status_labels.get(project_status, project_status),
+                bg=BG2,
+                fg=YELLOW if project_status == "in_progress" else (GREEN if project_status == "completed" else FG_MUTED),
+                font=FONT,
+                anchor="e",
+            ).pack(side="right")
+
+            tk.Label(
+                card,
+                text=tr_extra("recent_source", source_path or source_name),
+                bg=BG2,
+                fg=FG_MUTED,
+                font=FONT,
+                anchor="w",
+                justify="left",
+                wraplength=330,
+            ).pack(fill="x", padx=8)
+            tk.Label(
+                card,
+                text=tr_extra("recent_output", output_dir or "-"),
+                bg=BG2,
+                fg=FG_MUTED,
+                font=FONT,
+                anchor="w",
+                justify="left",
+                wraplength=330,
+            ).pack(fill="x", padx=8, pady=(0, 6))
+
+            actions = tk.Frame(card, bg=BG2)
+            actions.pack(fill="x", padx=8, pady=(0, 8))
+            tk.Button(
+                actions,
+                text=tr_extra("recent_load"),
+                bg=BG,
+                fg=ACCENT,
+                font=FONT,
+                relief="flat",
+                cursor="hand2",
+                command=lambda item=project: load_recent_project(item),
+            ).pack(side="left")
+            tk.Button(
+                actions,
+                text=tr_extra("recent_open"),
+                bg=BG,
+                fg=FG,
+                font=FONT,
+                relief="flat",
+                cursor="hand2",
+                command=lambda output=output_dir: open_output_folder(output),
+            ).pack(side="left", padx=(6, 0))
+
+        root.after_idle(update_left_scrollregion)
 
     def scan_llm_models():
         def worker():
@@ -1556,6 +2179,137 @@ def run_app():
     btn_frame = tk.Frame(left, bg=BG)
     btn_frame.pack(fill="x", pady=(0, 8))
 
+    def import_zip_bundle():
+        zip_path = filedialog.askopenfilename(
+            title=tr_extra("import_zip_title"),
+            filetypes=[("ZIP files", "*.zip")],
+        )
+        if not zip_path:
+            return
+
+        try:
+            with zipfile.ZipFile(zip_path, "r") as archive:
+                members = [name for name in archive.namelist() if not name.endswith("/")]
+                config_member = next(
+                    (
+                        name for name in sorted(members, key=len)
+                        if Path(name).name.lower() == "config.json"
+                    ),
+                    None,
+                )
+                model_members = [
+                    name for name in members
+                    if name.lower().endswith(".onnx") or name.lower().endswith(".onnx.json")
+                ]
+                output_members = [
+                    name for name in members
+                    if name.startswith("output/") and not name.endswith("/")
+                ]
+
+                imported_config = None
+                if config_member:
+                    imported_config = json.loads(archive.read(config_member).decode("utf-8"))
+
+                if imported_config is None and not model_members and not output_members:
+                    raise Exception(tr_extra("zip_missing"))
+
+                models_dir = PROJECT_DIR / "piper_models"
+                models_dir.mkdir(exist_ok=True)
+                imported_models = 0
+                for member in model_members:
+                    destination = models_dir / Path(member).name
+                    destination.write_bytes(archive.read(member))
+                    imported_models += 1
+
+                if imported_config:
+                    state.config.update(imported_config)
+                    state.config.setdefault(
+                        "ui_sections",
+                        {
+                            "work_mode": True,
+                            "source_files": True,
+                            "recent_projects": True,
+                            "pdf_settings": True,
+                            "text_extraction": True,
+                            "tts": True,
+                            "llm": True,
+                        },
+                    )
+                    persist_current_config(status=get_recent_project_status(state.config))
+
+                imported_output_files = 0
+                if output_members:
+                    import_output_dir = resolve_output_dir(state.config.get("output_dir", ""))
+                    import_output_dir.mkdir(parents=True, exist_ok=True)
+                    for member in output_members:
+                        relative_output = Path(member).relative_to("output")
+                        destination = import_output_dir / relative_output
+                        destination.parent.mkdir(parents=True, exist_ok=True)
+                        destination.write_bytes(archive.read(member))
+                        imported_output_files += 1
+
+                messagebox.showinfo(
+                    tr_extra("import_zip_success_title"),
+                    tr_extra(
+                        "import_zip_success",
+                        tr_extra("yes") if imported_config else tr_extra("no"),
+                        imported_models + imported_output_files,
+                    ),
+                )
+                root.after(50, lambda: (root.destroy(), run_app()))
+        except Exception as exc:
+            messagebox.showerror(tr_extra("import_zip_error_title"), str(exc))
+
+    def export_zip_bundle():
+        state.save()
+        suggested_name = sanitize_job_name(Path(state.config.get("pdf_path") or state.config.get("txt_path") or "AudiobookForge").stem)
+        zip_path = filedialog.asksaveasfilename(
+            title=tr_extra("export_zip_title"),
+            defaultextension=".zip",
+            initialfile=f"{suggested_name}_bundle.zip",
+            filetypes=[("ZIP files", "*.zip")],
+        )
+        if not zip_path:
+            return
+
+        output_dir = resolve_output_dir(state.config.get("output_dir", ""))
+        export_entries = []
+
+        if CONFIG_PATH.exists():
+            export_entries.append((CONFIG_PATH, Path("config.json")))
+
+        models_dir = PROJECT_DIR / "piper_models"
+        if models_dir.exists():
+            for model_path in sorted(models_dir.glob("*.onnx*")):
+                export_entries.append((model_path, Path("piper_models") / model_path.name))
+
+        for output_name in [
+            "output.txt",
+            "audiobook_final.mp3",
+            "output_przetlumaczony.pdf",
+            "pipeline_stats.json",
+            "job_state.json",
+            "tts_state.json",
+        ]:
+            candidate = output_dir / output_name
+            if candidate.exists():
+                export_entries.append((candidate, Path("output") / candidate.name))
+
+        if not export_entries:
+            messagebox.showerror(tr_extra("export_zip_error_title"), tr_extra("zip_nothing_to_export"))
+            return
+
+        try:
+            with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                for source_path, archive_name in export_entries:
+                    archive.write(source_path, archive_name.as_posix())
+            messagebox.showinfo(
+                tr_extra("export_zip_success_title"),
+                tr_extra("export_zip_success", len(export_entries)),
+            )
+        except Exception as exc:
+            messagebox.showerror(tr_extra("export_zip_error_title"), str(exc))
+
     def install_piper_model():
         import urllib.request
 
@@ -1592,10 +2346,32 @@ def run_app():
         font=FONT,
         relief="flat",
         cursor="hand2",
-        command=lambda: (state.save(), log(tr_runtime("config_saved"))),
+        command=lambda: (persist_current_config(status=get_recent_project_status(state.config)), render_recent_projects(), log(tr_runtime("config_saved"))),
     ).pack(fill="x", pady=2)
 
     tk.Button(
+        btn_frame,
+        text=tr_extra("export_zip_button"),
+        bg=BG2,
+        fg=ACCENT,
+        font=FONT,
+        relief="flat",
+        cursor="hand2",
+        command=export_zip_bundle,
+    ).pack(fill="x", pady=2)
+
+    tk.Button(
+        btn_frame,
+        text=tr_extra("import_zip_button"),
+        bg=BG2,
+        fg=ACCENT,
+        font=FONT,
+        relief="flat",
+        cursor="hand2",
+        command=import_zip_bundle,
+    ).pack(fill="x", pady=2)
+
+    download_piper_btn = tk.Button(
         btn_frame,
         text=tr("download_piper"),
         bg="#0d2818",
@@ -1604,7 +2380,8 @@ def run_app():
         relief="flat",
         cursor="hand2",
         command=install_piper_model,
-    ).pack(fill="x", pady=2)
+    )
+    tts_visibility_widgets["download_piper_btn"] = download_piper_btn
 
     start_btn = tk.Button(
         right,
@@ -1662,6 +2439,10 @@ def run_app():
     status_frame.pack(fill="x", pady=(0, 8))
     status_var = tk.StringVar(value=tr_runtime("status_ready"))
     tk.Label(status_frame, textvariable=status_var, bg=BG2, fg=GREEN, font=("Consolas", 12, "bold")).pack(padx=12)
+    timing_var = tk.StringVar(value="Elapsed: 00:00 | ETA: --:-- | Avg: --")
+    tk.Label(status_frame, textvariable=timing_var, bg=BG2, fg=FG_MUTED, font=FONT_MONO).pack(padx=12, pady=(4, 0))
+    stats_var = tk.StringVar(value="")
+    tk.Label(status_frame, textvariable=stats_var, bg=BG2, fg=FG_MUTED, font=FONT_MONO).pack(padx=12, pady=(4, 0))
 
     prog_frame = tk.LabelFrame(
         right,
@@ -1717,32 +2498,136 @@ def run_app():
     console.pack(fill="both", expand=True, padx=4, pady=4)
 
     def log(msg: str):
+        if threading.current_thread() is not threading.main_thread():
+            root.after(0, lambda value=msg: log(value))
+            return
         state.logs.append(msg)
         console.configure(state="normal")
         console.insert("end", msg + "\n")
         console.see("end")
         console.configure(state="disabled")
 
+    def format_duration(seconds: float) -> str:
+        total_seconds = max(0, int(seconds))
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, secs = divmod(remainder, 60)
+        if hours:
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+        return f"{minutes:02d}:{secs:02d}"
+
+    def summarize_stage_stats(stats: dict) -> str:
+        if not stats:
+            return ""
+        current_stage = stats.get("current_stage") or ("done" if stats.get("completed") else "-")
+        return (
+            f"Stage: {current_stage} | "
+            f"Pages: {stats.get('page_count', 0)} | "
+            f"Chunks: {stats.get('chunk_count', 0)} | "
+            f"Elapsed: {format_duration(stats.get('elapsed_seconds', 0))}"
+        )
+
+    def log_stage_stats(stats: dict):
+        if not stats:
+            return
+        stage_parts = []
+        for stage_name, stage_stats in stats.get("stages", {}).items():
+            if stage_stats.get("status") == "skipped":
+                continue
+            stage_parts.append(
+                f"{stage_name}={stage_stats.get('status')}:{format_duration(stage_stats.get('elapsed_seconds', 0))}"
+            )
+        if stage_parts:
+            log("Stage stats: " + " | ".join(stage_parts))
+
+    progress_state = {"started_at": None, "stages": {}}
+
     def progress_cb(stage: str, current: int, total: int):
+        if threading.current_thread() is not threading.main_thread():
+            root.after(0, lambda s=stage, c=current, t=total: progress_cb(s, c, t))
+            return
         pct = int(current / total * 100) if total > 0 else 0
         if stage in prog_vars:
             prog_vars[stage].set(pct)
         if stage in pct_labels:
             pct_labels[stage].config(text=f"{pct}%")
+        if progress_state["started_at"] is None or total <= 0 or current <= 0:
+            return
+        now = time.time()
+        stage_state = progress_state["stages"].setdefault(
+            stage,
+            {
+                "started_at": now,
+                "last_time": now,
+                "last_current": current,
+                "avg_item_seconds": None,
+            },
+        )
+        if current > stage_state["last_current"]:
+            delta_items = current - stage_state["last_current"]
+            delta_time = max(0.0, now - stage_state["last_time"])
+            sample_avg = delta_time / delta_items if delta_items else 0.0
+            if stage_state["avg_item_seconds"] is None:
+                stage_state["avg_item_seconds"] = sample_avg
+            else:
+                stage_state["avg_item_seconds"] = (stage_state["avg_item_seconds"] * 0.7) + (sample_avg * 0.3)
+            stage_state["last_time"] = now
+            stage_state["last_current"] = current
+
+        elapsed = time.time() - progress_state["started_at"]
+        stage_elapsed = time.time() - stage_state["started_at"]
+        remaining = max(0, total - current)
+        avg_item_seconds = stage_state["avg_item_seconds"]
+        if avg_item_seconds is None and current > 0:
+            avg_item_seconds = stage_elapsed / current
+        eta = avg_item_seconds * remaining if avg_item_seconds is not None else None
+        avg_text = f"{avg_item_seconds:.1f}s/item" if avg_item_seconds is not None else "--"
+        eta_text = format_duration(eta) if eta is not None and remaining else ("00:00" if remaining == 0 else "--:--")
+        timing_var.set(f"Elapsed: {format_duration(elapsed)} | ETA: {eta_text} | Avg: {avg_text}")
 
     def start_pipeline():
         if state.running:
             return
         state.running = True
         state.reset_events()
+        output_dir = resolve_output_dir(state.config.get("output_dir", ""))
+        state.config["output_dir"] = str(output_dir)
 
-        output_dir = Path(state.config.get("output_dir", ""))
-        output_txt = output_dir / "output.txt"
-        if state.config.get("mode") != "txt_to_audio" and output_txt.exists():
-            output_txt.unlink()
-            log(tr_runtime("old_output_removed"))
+        previous_state, existing_job_summary = summarize_existing_job(output_dir)
+        current_state = build_job_signature(state.config)
+        start_action = "resume"
+
+        if previous_state:
+            same_job = previous_state == current_state
+            if same_job:
+                choice = messagebox.askyesnocancel(
+                    tr_extra("resume_title"),
+                    tr_extra("resume_message", existing_job_summary),
+                )
+                if choice is None:
+                    state.running = False
+                    status_var.set(tr_runtime("status_ready"))
+                    return
+                start_action = "resume" if choice else "overwrite"
+            else:
+                choice = messagebox.askyesnocancel(
+                    tr_extra("overwrite_title"),
+                    tr_extra("overwrite_message", existing_job_summary),
+                )
+                if not choice:
+                    state.running = False
+                    status_var.set(tr_runtime("status_ready"))
+                    return
+                start_action = "overwrite"
+
+        state.config["_job_start_action"] = start_action
+        persist_current_config(status="in_progress")
+        render_recent_projects()
+        progress_state["started_at"] = time.time()
+        progress_state["stages"] = {}
 
         status_var.set(tr_runtime("status_running"))
+        timing_var.set("Elapsed: 00:00 | ETA: --:-- | Avg: --")
+        stats_var.set("")
         console.configure(state="normal")
         console.delete("1.0", "end")
         console.configure(state="disabled")
@@ -1751,14 +2636,34 @@ def run_app():
 
         def run():
             try:
-                run_pipeline(state.config, log, progress_cb, state.pause_event, state.stop_event)
-                status_var.set(tr_runtime("status_completed"))
-                log(tr_runtime("done"))
+                result = run_pipeline(state.config, log, progress_cb, state.pause_event, state.stop_event)
+                stats = result.get("stats", {}) if isinstance(result, dict) else {}
+                elapsed_seconds = stats.get("elapsed_seconds", time.time() - progress_state["started_at"])
+                stopped = isinstance(result, dict) and result.get("stopped")
+                root.after(0, lambda: status_var.set(tr_runtime("status_stopped") if stopped else tr_runtime("status_completed")))
+                root.after(0, lambda: timing_var.set(f"Elapsed: {format_duration(elapsed_seconds)} | ETA: 00:00 | Avg: done"))
+                root.after(0, lambda: stats_var.set(summarize_stage_stats(stats)))
+                persist_current_config(status="in_progress" if stopped else "completed")
+                root.after(0, render_recent_projects)
+                log(tr_runtime("stopped") if stopped else tr_runtime("done"))
+                if stats:
+                    log(
+                        "Stats: "
+                        f"time={format_duration(stats.get('elapsed_seconds', 0))} | "
+                        f"pages={stats.get('page_count', 0)} | "
+                        f"chunks={stats.get('chunk_count', 0)} | "
+                        f"chars={stats.get('character_count', 0)} | "
+                        f"est_tokens={stats.get('estimated_tokens', 0)}"
+                    )
+                    log_stage_stats(stats)
             except Exception as e:
+                persist_current_config(status="in_progress")
+                root.after(0, render_recent_projects)
                 log(tr_runtime("error", e))
                 log(traceback.format_exc())
-                status_var.set(tr_runtime("status_error"))
+                root.after(0, lambda: status_var.set(tr_runtime("status_error")))
             finally:
+                state.config.pop("_job_start_action", None)
                 state.running = False
 
         threading.Thread(target=run, daemon=True).start()
@@ -1779,17 +2684,10 @@ def run_app():
         status_var.set(tr_runtime("status_stopped"))
         log(tr_runtime("stopped"))
 
-    def open_folder():
-        import subprocess
-
-        output = Path(state.config.get("output_dir", str(PROJECT_DIR / "audiobook_output")))
-        output.mkdir(parents=True, exist_ok=True)
-        subprocess.Popen(f'explorer "{output}"')
-
     start_btn.config(command=start_pipeline)
     pause_btn.config(command=pause_pipeline)
     stop_btn.config(command=stop_pipeline)
-    open_btn.config(command=open_folder)
+    open_btn.config(command=open_output_folder)
 
     style = ttk.Style()
     style.theme_use("clam")
@@ -1812,6 +2710,8 @@ def run_app():
     scan_piper_models()
     update_tts_voice_visibility()
     update_mode()
+    render_recent_projects()
+    root.after_idle(update_left_scrollregion)
 
     log(tr_runtime("app_ready"))
     root.mainloop()

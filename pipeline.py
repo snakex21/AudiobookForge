@@ -2,11 +2,13 @@ import os
 import json
 import time
 import base64
+import hashlib
 import threading
 import subprocess
 import shutil
 import requests
 import sys
+import re
 from pathlib import Path
 from typing import Optional, Callable, Literal, List
 from PIL import Image
@@ -63,6 +65,38 @@ LANGUAGE_NAMES = {
     "ukr": "ukraiński",
     "spa": "hiszpański",
     "ita": "włoski",
+}
+
+LANGUAGE_PROMPT_NAMES = {
+    "pol": "Polish",
+    "eng": "English",
+    "deu": "German",
+    "rus": "Russian",
+    "fra": "French",
+    "ces": "Czech",
+    "ukr": "Ukrainian",
+    "spa": "Spanish",
+    "ita": "Italian",
+    "por": "Portuguese",
+    "nld": "Dutch",
+    "swe": "Swedish",
+    "tur": "Turkish",
+}
+
+LANGUAGE_STOPWORDS = {
+    "pol": {"i", "w", "z", "na", "się", "sie", "że", "to", "nie", "jest", "do", "dla", "oraz", "ale", "jak", "które", "ktore", "przez"},
+    "eng": {"the", "and", "to", "of", "in", "is", "for", "that", "with", "on", "as", "are", "be", "this", "by", "from"},
+    "deu": {"der", "die", "das", "und", "ist", "nicht", "mit", "von", "zu", "ein", "eine", "den", "dem", "des", "auf", "für", "fur", "als", "auch", "im", "in"},
+    "rus": {"и", "в", "не", "на", "что", "это", "с", "по", "для", "как", "из", "к", "но", "она", "он", "бы"},
+    "fra": {"le", "la", "les", "de", "des", "et", "en", "un", "une", "pour", "dans", "est", "sur", "avec", "par", "que"},
+    "ces": {"a", "v", "z", "na", "je", "se", "to", "že", "pro", "s", "do", "jako", "které", "ktere", "ale", "by"},
+    "ukr": {"і", "в", "не", "на", "що", "це", "з", "до", "для", "як", "але", "по", "та", "у", "які", "yaki"},
+    "spa": {"el", "la", "los", "las", "de", "del", "y", "en", "para", "con", "que", "por", "una", "un", "como", "es"},
+    "ita": {"il", "lo", "la", "gli", "le", "di", "del", "e", "in", "per", "con", "che", "una", "un", "come", "è", "e"},
+    "por": {"o", "a", "os", "as", "de", "do", "da", "e", "em", "para", "com", "que", "uma", "um", "como", "é"},
+    "nld": {"de", "het", "een", "en", "van", "in", "op", "voor", "met", "dat", "als", "is", "te", "door", "uit", "niet"},
+    "swe": {"och", "det", "att", "i", "en", "som", "på", "för", "med", "är", "av", "till", "den", "detta", "inte", "från"},
+    "tur": {"ve", "bir", "bu", "için", "ile", "da", "de", "olan", "olarak", "çok", "gibi", "ama", "daha", "mi", "ne", "ya"},
 }
 
 
@@ -122,6 +156,243 @@ def get_audio_language_settings(language_code: str) -> dict:
     return AUDIO_LANGUAGE_SETTINGS.get(language_code, AUDIO_LANGUAGE_SETTINGS["pol"])
 
 
+def format_duration(seconds: float) -> str:
+    total_seconds = max(0, int(seconds))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+    return f"{minutes:02d}:{secs:02d}"
+
+
+def estimate_tokens(text: str) -> int:
+    return max(0, len(text.strip()) // 4)
+
+
+def chunk_sort_key(path: Path) -> int:
+    match = re.search(r"chunk_(\d+)", path.stem)
+    return int(match.group(1)) if match else 0
+
+
+def page_sort_key(path: Path) -> int:
+    match = re.search(r"page_(\d+)", path.stem)
+    return int(match.group(1)) if match else 0
+
+
+def build_job_signature(config: dict) -> dict:
+    return {
+        "mode": config.get("mode", "translate_to_audio"),
+        "pdf_path": str(Path(config.get("pdf_path", "book.pdf")).resolve()) if config.get("pdf_path") else "",
+        "txt_path": str(Path(config.get("txt_path", "")).resolve()) if config.get("txt_path") else "",
+        "speaker_wav": str(Path(config.get("speaker_wav", "")).resolve()) if config.get("speaker_wav") else "",
+        "pdf_language": config.get("pdf_language", "pol"),
+        "target_language": config.get("target_language", "pol"),
+        "extraction_mode": config.get("extraction_mode", "pypdfium"),
+        "llm_provider": config.get("llm_provider", "lmstudio"),
+        "llm_url": config.get("llm_url", ""),
+        "llm_model": config.get("llm_model", ""),
+        "tts_provider": config.get("tts_provider", "piper"),
+        "piper_voice": config.get("piper_voice", ""),
+        "edge_voice": config.get("edge_voice", ""),
+        "export_pdf": config.get("export_pdf", False),
+    }
+
+
+def clear_previous_job_output(output_dir: Path) -> None:
+    for stale_file in [
+        output_dir / "output.txt",
+        output_dir / "output_przetlumaczony.pdf",
+        output_dir / "audiobook_final.mp3",
+        output_dir / "filelist.txt",
+        output_dir / "translation_state.json",
+        output_dir / "tts_state.json",
+        output_dir / "pipeline_stats.json",
+    ]:
+        stale_file.unlink(missing_ok=True)
+
+    for stale_dir in [output_dir / "pages", output_dir / "chunks"]:
+        if stale_dir.exists():
+            shutil.rmtree(stale_dir, ignore_errors=True)
+
+
+def prepare_output_dir_for_job(config: dict, output_dir: Path, log_callback: Callable[[str], None]) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    state_file = output_dir / "job_state.json"
+    current_state = build_job_signature(config)
+    previous_state = None
+    start_action = config.get("_job_start_action", "resume")
+
+    if state_file.exists():
+        try:
+            with open(state_file, "r", encoding="utf-8") as handle:
+                previous_state = json.load(handle)
+        except Exception:
+            previous_state = None
+
+    if previous_state and start_action == "overwrite":
+        clear_previous_job_output(output_dir)
+        log_callback("Start od nowa - czyszcze stare pliki wyjsciowe.")
+    elif previous_state and previous_state != current_state:
+        raise Exception("Folder wyjsciowy zawiera inne zadanie. Wybierz wznowienie albo nowy folder.")
+    elif previous_state == current_state:
+        log_callback("Wykryto poprzedni stan zadania - wznowienie jest mozliwe.")
+
+    with open(state_file, "w", encoding="utf-8") as handle:
+        json.dump(current_state, handle, indent=2)
+
+
+def read_output_text(output_dir: Path) -> str:
+    output_file = output_dir / "output.txt"
+    return output_file.read_text(encoding="utf-8") if output_file.exists() else ""
+
+
+def count_output_pages(text_content: str) -> int:
+    return text_content.count("=== Strona")
+
+
+def stages_for_mode(mode: str) -> list[str]:
+    if mode == "txt_to_audio":
+        return ["audio", "merge"]
+    if mode == "pdf_to_audio":
+        return ["extraction", "audio", "merge"]
+    if mode == "translate_to_txt":
+        return ["extraction", "translation"]
+    return ["extraction", "translation", "audio", "merge"]
+
+
+def collect_pipeline_stats(
+    output_dir: Path,
+    start_time: float,
+    mode: str = "translate_to_audio",
+    stage_timings: Optional[dict] = None,
+    current_stage: Optional[str] = None,
+    completed: bool = False,
+) -> dict:
+    stage_timings = stage_timings or {}
+    output_file = output_dir / "output.txt"
+    pages_dir = output_dir / "pages"
+    chunks_dir = output_dir / "chunks"
+    text_content = read_output_text(output_dir)
+    page_count = count_output_pages(text_content)
+    rendered_page_count = len(list(pages_dir.glob("page_*.jpg"))) if pages_dir.exists() else 0
+    chunk_count = len(list(chunks_dir.glob("chunk_*.mp3"))) if chunks_dir.exists() else 0
+    enabled_stages = stages_for_mode(mode)
+
+    stages = {}
+    for stage_name in ["extraction", "translation", "audio", "merge"]:
+        if stage_name not in enabled_stages:
+            status = "skipped"
+        elif stage_name in stage_timings:
+            status = "completed"
+        elif completed:
+            status = "pending"
+        elif current_stage == stage_name:
+            status = "running"
+        else:
+            status = "pending"
+
+        stage_stats = {
+            "status": status,
+            "elapsed_seconds": round(stage_timings.get(stage_name, 0), 2),
+        }
+        if stage_name == "extraction":
+            stage_stats["page_count"] = rendered_page_count if mode in {"translate_to_audio", "translate_to_txt"} else page_count
+        elif stage_name == "translation":
+            stage_stats["page_count"] = page_count
+            stage_stats["estimated_tokens"] = estimate_tokens(text_content)
+        elif stage_name == "audio":
+            stage_stats["chunk_count"] = chunk_count
+        elif stage_name == "merge":
+            stage_stats["final_audio_exists"] = (output_dir / "audiobook_final.mp3").exists()
+        stages[stage_name] = stage_stats
+
+    stats = {
+        "elapsed_seconds": round(time.time() - start_time, 2),
+        "mode": mode,
+        "current_stage": None if completed else current_stage,
+        "completed": completed,
+        "page_count": page_count,
+        "chunk_count": chunk_count,
+        "character_count": len(text_content),
+        "estimated_tokens": estimate_tokens(text_content),
+        "stages": stages,
+    }
+    with open(output_dir / "pipeline_stats.json", "w", encoding="utf-8") as handle:
+        json.dump(stats, handle, indent=2)
+    return stats
+
+
+def load_json_file(path: Path, default):
+    if not path.exists():
+        return default
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except Exception:
+        return default
+
+
+def save_json_file(path: Path, data: dict) -> None:
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=2, ensure_ascii=False)
+
+
+def extract_translation_state_from_output(output_file: Path) -> dict:
+    if not output_file.exists():
+        return {"pages": {}}
+
+    content = output_file.read_text(encoding="utf-8")
+    pages = {}
+    pattern = re.compile(r"(?:^|\n)=== Strona (\d+) ===\n(.*?)(?=(?:\n=== Strona \d+ ===\n)|\Z)", re.S)
+    for match in pattern.finditer(content):
+        page_num = match.group(1)
+        page_text = match.group(2).strip()
+        error_match = re.fullmatch(r"\[BŁĄD STRONY \d+: (.*)\]", page_text, re.S)
+        if error_match:
+            pages[page_num] = {"status": "failed", "error": error_match.group(1).strip()}
+        else:
+            pages[page_num] = {"status": "completed", "text": page_text}
+    return {"pages": pages}
+
+
+def save_translation_output(output_file: Path, translation_state: dict) -> None:
+    lines = []
+    for page_num in sorted((int(key) for key in translation_state.get("pages", {})), key=int):
+        page_state = translation_state["pages"][str(page_num)]
+        text = page_state.get("text", "") if page_state.get("status") == "completed" else f"[BŁĄD STRONY {page_num}: {page_state.get('error', 'nieznany błąd')}]"
+        lines.append(f"=== Strona {page_num} ===\n{text}".strip())
+
+    output_text = "\n\n".join(lines)
+    if output_text:
+        output_text += "\n"
+    output_file.write_text(output_text, encoding="utf-8")
+
+
+def should_skip_tts_chunk(text: str) -> bool:
+    stripped = text.strip()
+    if not stripped:
+        return True
+
+    compact = re.sub(r"\s+", "", stripped)
+    if re.fullmatch(r"[\W_]+", compact, re.UNICODE):
+        return True
+
+    if re.fullmatch(r"(?i)[\[(]?(?:strona|page|p\.?)[\s:\-]*\d+[\])]?$", stripped):
+        return True
+
+    if re.fullmatch(r"(?i)[\[(]?(?:\d+|[ivxlcdm]+)(?:[\./\-:]\d+)?[\])]?$", compact):
+        return True
+
+    word_tokens = re.findall(r"[A-Za-zÀ-ÿĄąĆćĘęŁłŃńÓóŚśŹźŻżЀ-ӿ]{2,}", stripped)
+    if word_tokens:
+        return False
+
+    letters = len(re.findall(r"[A-Za-zÀ-ÿĄąĆćĘęŁłŃńÓóŚśŹźŻżЀ-ӿ]", stripped))
+    digits = len(re.findall(r"\d", stripped))
+    symbols = len(re.findall(r"[^\w\s]", stripped, re.UNICODE))
+    return letters <= 3 and digits + symbols >= max(3, letters)
+
+
 def resolve_ffmpeg_path() -> str:
     ffmpeg_path = shutil.which("ffmpeg")
     if ffmpeg_path and not ffmpeg_path.lower().endswith("python313\\scripts\\ffmpeg.exe"):
@@ -177,20 +448,73 @@ def pdf_to_images(pdf_path: Path, output_dir: Path, log_callback: Callable[[str]
 
     pdf = pdfium.PdfDocument(str(pdf_path))
     try:
-        total = len(pdf) - (start_page - 1)
+        total = len(pdf)
 
         for i in range(start_page - 1, len(pdf)):
             page_num = i + 1
+            page_path = pages_dir / f"page_{page_num:03d}.jpg"
+            if page_path.exists():
+                progress_callback("translation", page_num, total)
+                continue
             page = pdf[i]
             bitmap = page.render(scale=200 / 72, rotation=0)
             pil_image = bitmap.to_pil()
-            pil_image.save(str(pages_dir / f"page_{page_num:03d}.jpg"), "JPEG")
-            progress_callback("translation", page_num, page_num)
+            pil_image.save(str(page_path), "JPEG")
+            progress_callback("translation", page_num, total)
             log_callback(f"Zapisano stronę {page_num}")
     finally:
         pdf.close()
 
     return total
+
+
+def extract_language_tokens(text: str) -> list[str]:
+    return re.findall(r"[A-Za-zÀ-ÿĄąĆćĘęŁłŃńÓóŚśŹźŻżЀ-ӿ']+", text.lower())
+
+
+def get_language_score(text: str, lang_code: str) -> int:
+    stopwords = LANGUAGE_STOPWORDS.get(lang_code)
+    if not stopwords:
+        return 0
+    tokens = extract_language_tokens(text)
+    return sum(1 for token in tokens if token in stopwords)
+
+
+def looks_like_untranslated_page(text: str, source_lang: str, target_lang: str) -> bool:
+    if source_lang == target_lang:
+        return False
+
+    if source_lang not in LANGUAGE_STOPWORDS or target_lang not in LANGUAGE_STOPWORDS:
+        return False
+
+    tokens = extract_language_tokens(text)
+    if len(tokens) < 25:
+        return False
+
+    source_score = get_language_score(text, source_lang)
+    target_score = get_language_score(text, target_lang)
+    source_ratio = source_score / max(1, len(tokens))
+
+    return source_score >= 4 and source_ratio >= 0.06 and source_score > max(2, target_score * 2)
+
+
+def build_translation_prompt(source_lang: str, target_lang: str, stricter: bool = False) -> str:
+    source_name = LANGUAGE_PROMPT_NAMES.get(source_lang, source_lang)
+    target_name = LANGUAGE_PROMPT_NAMES.get(target_lang, target_lang)
+    prompt = (
+        f"Read the page and translate all meaningful prose from {source_name} into {target_name}. "
+        f"Return only the translated page text in {target_name}. "
+        "Preserve proper names, book titles in original script, ISBN numbers, e-mail addresses, URLs, publisher names, and other metadata when appropriate. "
+        "Do not keep full sentences or paragraphs in the source language unless they are explicit quotations or titles that should remain in the original form. "
+        "If the page contains only page numbers, isolated punctuation, or meaningless OCR garbage, return an empty string."
+    )
+    if stricter:
+        prompt += (
+            f" IMPORTANT: the previous answer kept too much {source_name}. "
+            f"This retry must output prose predominantly in {target_name}. "
+            f"Do not leave body paragraphs in {source_name}."
+        )
+    return prompt
 
 
 def translate_page(image_path: Path, llm_url: str, model: str, api_key: Optional[str] = None,
@@ -199,31 +523,38 @@ def translate_page(image_path: Path, llm_url: str, model: str, api_key: Optional
     with open(image_path, "rb") as f:
         img_data = base64.b64encode(f.read()).decode()
 
-    target_name = LANGUAGE_NAMES.get(target_lang, target_lang)
-
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": f"Przepisz lub przetłumacz tekst z obrazka na język {target_name}. Zwróć TYLKO tekst, bez komentarzy."},
-            {"role": "user", "content": [
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}}
-            ]}
-        ],
-        "max_tokens": 4096
-    }
+    last_text = ""
+    for attempt in range(2):
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": build_translation_prompt(source_lang, target_lang, stricter=attempt > 0)},
+                {"role": "user", "content": [
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}}
+                ]}
+            ],
+            "max_tokens": 4096
+        }
 
-    try:
-        resp = requests.post(f"{llm_url}/chat/completions", json=payload, headers=headers, timeout=120)
-        if resp.status_code == 200:
-            return resp.json()["choices"][0]["message"]["content"]
-        else:
-            raise Exception(f"HTTP {resp.status_code}: {resp.text}")
-    except Exception as e:
-        raise Exception(f"API error: {e}")
+        try:
+            resp = requests.post(f"{llm_url}/chat/completions", json=payload, headers=headers, timeout=120)
+            if resp.status_code != 200:
+                raise Exception(f"HTTP {resp.status_code}: {resp.text}")
+            last_text = resp.json()["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            raise Exception(f"API error: {e}")
+
+        if not looks_like_untranslated_page(last_text, source_lang, target_lang):
+            return last_text
+
+        if log_callback:
+            log_callback("Wynik tłumaczenia wygląda na pozostawiony w języku źródłowym - ponawiam stronę z ostrzejszym promptem.")
+
+    raise Exception("Model zwrócił tekst wyglądający na nieprzetłumaczony po ponowieniu próby")
 
 
 def ocr_page_with_vision(image_path: Path, llm_url: str, model: str, api_key: Optional[str] = None) -> str:
@@ -262,58 +593,97 @@ def translate_pdf(pdf_path: Path, output_dir: Path, llm_url: str, model: str, ap
                   log_callback: Callable[[str], None], progress_callback: Callable[[str, int, int], None], pause_event: threading.Event, stop_event: threading.Event):
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / "output.txt"
+    translation_state_file = output_dir / "translation_state.json"
+    translation_state = load_json_file(translation_state_file, {"pages": {}})
+    if not translation_state.get("pages"):
+        translation_state = extract_translation_state_from_output(output_file)
 
-    existing_pages = 0
-    if output_file.exists():
-        with open(output_file, "r", encoding="utf-8") as f:
-            content = f.read()
-        existing_pages = content.count("=== Strona")
-        if existing_pages > 0:
-            log_callback(f"Wznów od strony {existing_pages + 1}")
+    completed_pages = sorted(
+        int(page_num)
+        for page_num, page_state in translation_state.get("pages", {}).items()
+        if page_state.get("status") == "completed"
+    )
+    if completed_pages:
+        log_callback(f"Wznowienie tłumaczenia - gotowe strony: {len(completed_pages)}")
 
     pages_dir = output_dir / "pages"
-    page_files = sorted(pages_dir.glob("page_*.jpg"))
+    page_files = sorted(pages_dir.glob("page_*.jpg"), key=page_sort_key)
     total_pages = len(page_files)
 
-    with open(output_file, "a", encoding="utf-8") as f:
-        for i, page_file in enumerate(page_files):
-            if stop_event.is_set():
-                break
+    for i, page_file in enumerate(page_files):
+        if stop_event.is_set():
+            break
 
-            page_num = i + 1
-            if page_num <= existing_pages:
-                continue
-
-            while pause_event.is_set():
-                time.sleep(0.5)
-                if stop_event.is_set():
-                    break
-
-            if stop_event.is_set():
-                break
-
-            f.write(f"\n=== Strona {page_num} ===\n")
-            f.flush()
-
-            try:
-                text = translate_page(page_file, llm_url, model, api_key, source_lang=source_lang, target_lang=target_lang)
-                f.write(text + "\n")
-                f.flush()
-                log_callback(f"Przetłumaczono stronę {page_num}")
-            except Exception as e:
-                f.write(f"[BŁĄD STRONY {page_num}: {str(e)}]\n")
-                f.flush()
-                log_callback(f"Błąd strony {page_num}: {e}")
-
+        page_num = i + 1
+        page_state = translation_state.setdefault("pages", {}).get(str(page_num), {})
+        if page_state.get("status") == "completed":
             progress_callback("translation", page_num, total_pages)
+            continue
+
+        while pause_event.is_set():
+            time.sleep(0.5)
+            if stop_event.is_set():
+                break
+
+        if stop_event.is_set():
+            break
+
+        try:
+            text = translate_page(page_file, llm_url, model, api_key, source_lang=source_lang, target_lang=target_lang, log_callback=log_callback)
+            translation_state["pages"][str(page_num)] = {"status": "completed", "text": text}
+            log_callback(f"Przetłumaczono stronę {page_num}")
+        except Exception as e:
+            translation_state["pages"][str(page_num)] = {"status": "failed", "error": str(e)}
+            log_callback(f"Błąd strony {page_num}: {e}")
+
+        save_translation_output(output_file, translation_state)
+        save_json_file(translation_state_file, translation_state)
+        progress_callback("translation", page_num, total_pages)
+
+    failed_pages = sorted(
+        int(page_num)
+        for page_num, page_state in translation_state.get("pages", {}).items()
+        if page_state.get("status") == "failed"
+    )
+    if failed_pages and not stop_event.is_set():
+        raise Exception(f"Nie udalo sie przetlumaczyc stron: {', '.join(map(str, failed_pages[:20]))}")
 
     log_callback("Tłumaczenie zakończone")
 
 
-def generate_audio_with_edge_tts(text: str, output_path: Path, voice: str = "pl-PL-AgnieszkaNeural"):
+def generate_audio_with_edge_tts(text: str, output_path: Path, voice: str = "pl-PL-AgnieszkaNeural",
+                                 log_callback: Optional[Callable[[str], None]] = None, retries: int = 4):
     import edge_tts
-    communicate = edge_tts.Communicate(text, voice)
-    communicate.save_sync(str(output_path))
+
+    last_error = None
+    for attempt in range(1, retries + 1):
+        try:
+            output_path.unlink(missing_ok=True)
+            communicate = edge_tts.Communicate(text, voice)
+            communicate.save_sync(str(output_path))
+            if not output_path.exists() or output_path.stat().st_size == 0:
+                raise Exception("Edge TTS wygenerowal pusty plik")
+            return
+        except Exception as exc:
+            output_path.unlink(missing_ok=True)
+            last_error = exc
+            error_text = f"{type(exc).__name__}: {exc}"
+            transient_error = any(token in error_text for token in [
+                "503",
+                "WSServerHandshakeError",
+                "Invalid response status",
+                "ServerDisconnectedError",
+                "TimeoutError",
+                "ClientConnectorError",
+                "NoAudioReceived",
+                "No audio was received",
+            ])
+            if transient_error and attempt < retries:
+                if log_callback:
+                    log_callback(f"Edge TTS retry {attempt}/{retries - 1} po bledzie: {exc}")
+                time.sleep(min(2 * attempt, 8))
+                continue
+            raise last_error
 
 
 def generate_audio_with_elevenlabs(text: str, output_path: Path, api_key: str, voice_id: str = "rachel"):
@@ -414,21 +784,23 @@ def text_to_audio(output_dir: Path, tts_provider: str, speaker_wav: Optional[Pat
     chunks_dir.mkdir(exist_ok=True)
     tts_state_file = output_dir / "tts_state.json"
 
-    current_tts_state = {
+    with open(output_file, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    current_tts_settings = {
         "tts_provider": tts_provider,
         "piper_voice": piper_voice if tts_provider == "piper" else None,
         "edge_voice": edge_voice if tts_provider == "edge_tts" else None,
+        "content_hash": hashlib.sha1(content.encode("utf-8")).hexdigest(),
     }
 
-    previous_tts_state = None
-    if tts_state_file.exists():
-        try:
-            with open(tts_state_file, "r", encoding="utf-8") as f:
-                previous_tts_state = json.load(f)
-        except Exception:
-            previous_tts_state = None
+    tts_state = load_json_file(tts_state_file, {})
+    previous_tts_settings = tts_state.get("settings") if isinstance(tts_state, dict) else None
+    if previous_tts_settings is None and isinstance(tts_state, dict):
+        previous_tts_settings = {key: tts_state.get(key) for key in ["tts_provider", "piper_voice", "edge_voice"]}
+        tts_state = {"settings": previous_tts_settings, "chunks": {}}
 
-    if previous_tts_state != current_tts_state:
+    if previous_tts_settings != current_tts_settings:
         removed_chunks = 0
         for chunk_path in chunks_dir.glob("chunk_*.mp3"):
             chunk_path.unlink(missing_ok=True)
@@ -440,11 +812,11 @@ def text_to_audio(output_dir: Path, tts_provider: str, speaker_wav: Optional[Pat
         if removed_chunks:
             log_callback("Zmieniono ustawienia glosu TTS - usuwam stare chunki audio.")
 
-        with open(tts_state_file, "w", encoding="utf-8") as f:
-            json.dump(current_tts_state, f, indent=2)
+        tts_state = {"settings": current_tts_settings, "chunks": {}}
+    else:
+        tts_state = {"settings": current_tts_settings, "chunks": tts_state.get("chunks", {})}
 
-    with open(output_file, "r", encoding="utf-8") as f:
-        content = f.read()
+    save_json_file(tts_state_file, tts_state)
 
     raw_chunks = content.split("\n\n")
     chunk_list = []
@@ -454,6 +826,8 @@ def text_to_audio(output_dir: Path, tts_provider: str, speaker_wav: Optional[Pat
         if cleaned_chunk:
             chunk_list.append(cleaned_chunk)
     total_chunks = len(chunk_list)
+    failed_chunks = []
+    completed_chunks = 0
 
     for i, chunk in enumerate(chunk_list):
         if stop_event and stop_event.is_set():
@@ -468,16 +842,29 @@ def text_to_audio(output_dir: Path, tts_provider: str, speaker_wav: Optional[Pat
         if stop_event and stop_event.is_set():
             break
 
-        chunk_file = chunks_dir / f"chunk_{i+1:03d}.mp3"
-        if chunk_file.exists():
+        chunk_num = i + 1
+        chunk_key = f"{chunk_num:03d}"
+        chunk_file = chunks_dir / f"chunk_{chunk_key}.mp3"
+        chunk_state = tts_state["chunks"].get(chunk_key, {})
+
+        if should_skip_tts_chunk(chunk):
+            if chunk_state.get("status") != "skipped":
+                log_callback(f"Pominięto chunk {chunk_num}: wykryto pusty lub śmieciowy tekst")
+            tts_state["chunks"][chunk_key] = {"status": "skipped", "reason": "garbage_text"}
+            save_json_file(tts_state_file, tts_state)
+            progress_callback("audio", chunk_num, total_chunks)
+            continue
+
+        if chunk_state.get("status") == "completed" and chunk_file.exists():
             log_callback(f"Pominięto chunk {i+1}")
             progress_callback("audio", i+1, total_chunks)
+            completed_chunks += 1
             continue
 
         try:
             if tts_provider == "edge_tts":
                 voice = edge_voice or "pl-PL-ZofiaNeural"
-                generate_audio_with_edge_tts(chunk, chunk_file, voice=voice)
+                generate_audio_with_edge_tts(chunk, chunk_file, voice=voice, log_callback=log_callback)
             elif tts_provider == "piper":
                 piper_model = PROJECT_DIR / "piper_models" / f"{piper_voice}.onnx"
                 generate_audio_with_piper(chunk, chunk_file, model_path=piper_model)
@@ -490,14 +877,27 @@ def text_to_audio(output_dir: Path, tts_provider: str, speaker_wav: Optional[Pat
             elif tts_provider == "chatterbox":
                 generate_audio_with_chatterbox(chunk, chunk_file, speaker_wav=speaker_wav, url=chatterbox_url)
 
+            tts_state["chunks"][chunk_key] = {"status": "completed"}
+            save_json_file(tts_state_file, tts_state)
             log_callback(f"Wygenerowano chunk {i+1}/{total_chunks}")
+            completed_chunks += 1
         except Exception as e:
+            chunk_file.unlink(missing_ok=True)
+            tts_state["chunks"][chunk_key] = {"status": "failed", "error": str(e)}
+            save_json_file(tts_state_file, tts_state)
             log_callback(f"Błąd chunk {i+1}: {e}")
             import traceback
             log_callback(traceback.format_exc())
+            failed_chunks.append(i + 1)
             continue
 
         progress_callback("audio", i+1, total_chunks)
+
+    if completed_chunks == 0 and not failed_chunks:
+        raise Exception("Brak chunków do wygenerowania audio po odfiltrowaniu pustych lub śmieciowych fragmentów")
+
+    if failed_chunks:
+        raise Exception(f"Nie udalo sie wygenerowac chunkow: {', '.join(map(str, failed_chunks[:20]))}")
 
     log_callback("Generowanie audio zakończone")
 
@@ -614,9 +1014,6 @@ def extract_pdf_text_direct(pdf_path: Path, output_dir: Path, llm_url: str, llm_
             if stop_event and stop_event.is_set():
                 break
 
-            handle.write(f"\n=== Strona {page_num} ===\n")
-            handle.flush()
-
             if extraction_mode == "llm_vision":
                 try:
                     img_path = render_page_to_image(pdf_path, page_num, output_dir=output_dir)
@@ -641,7 +1038,7 @@ def extract_pdf_text_direct(pdf_path: Path, output_dir: Path, llm_url: str, llm_
                     except Exception as e:
                         log_callback(f"Błąd OCR strony {page_num}: {e}")
 
-            handle.write(text + "\n")
+            handle.write(f"\n=== Strona {page_num} ===\n{text}\n")
             if len(text) <= 20 and extraction_mode == "llm_vision":
                 log_callback(f"Strona {page_num}: brak tekstu po Vision OCR")
             elif len(text) <= 20 and extraction_mode != "llm_vision":
@@ -694,7 +1091,7 @@ def pdf_to_audio_direct(pdf_path: Path, output_dir: Path, tts_provider: str, spe
 
 def merge_audio_chunks(output_dir: Path, log_callback: Callable[[str], None], progress_callback: Callable[[str, int, int], None]):
     chunks_dir = output_dir / "chunks"
-    chunks = sorted(chunks_dir.glob("chunk_*.mp3"))
+    chunks = sorted(chunks_dir.glob("chunk_*.mp3"), key=chunk_sort_key)
 
     filelist = output_dir / "filelist.txt"
     with open(filelist, "w", encoding="utf-8") as f:
@@ -777,6 +1174,7 @@ def export_translated_pdf(output_dir: Path, log_callback: Callable[[str], None])
 
 
 def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_callback: Callable[[str, int, int], None], pause_event: threading.Event, stop_event: threading.Event):
+    started_at = time.time()
     pdf_path = Path(config.get("pdf_path", "book.pdf"))
     output_dir = resolve_project_path(config.get("output_dir", OUTPUT_DIR))
     speaker_wav = Path(config.get("speaker_wav", "speaker.wav")) if config.get("speaker_wav") else None
@@ -798,7 +1196,19 @@ def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_cal
     tts_api_key = config.get("tts_api_key")
     export_pdf = config.get("export_pdf", True)
 
-    output_dir.mkdir(parents=True, exist_ok=True)
+    prepare_output_dir_for_job(config, output_dir, log_callback)
+
+    stage_timings = {}
+
+    def persist_stats(current_stage: Optional[str] = None, completed: bool = False) -> dict:
+        return collect_pipeline_stats(
+            output_dir,
+            started_at,
+            mode=mode,
+            stage_timings=stage_timings,
+            current_stage=current_stage,
+            completed=completed,
+        )
 
     log_callback(f"MODE: {mode}")
     log_callback(f"TTS: {tts_provider}")
@@ -842,6 +1252,8 @@ def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_cal
             output_txt.write_text(source_txt.read_text(encoding="utf-8"), encoding="utf-8")
             log_callback(f"Skopiowano TXT do {output_txt}")
         log_callback("Wczytano output.txt — generuję audio...")
+        persist_stats("audio")
+        audio_started_at = time.time()
         text_to_audio(
             output_dir,
             tts_provider,
@@ -857,20 +1269,23 @@ def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_cal
             piper_voice,
         )
         if stop_event.is_set():
-            return {"stopped": True}
+            stage_timings["audio"] = time.time() - audio_started_at
+            return {"stopped": True, "stats": persist_stats("audio")}
+        stage_timings["audio"] = time.time() - audio_started_at
+        persist_stats("merge")
+        merge_started_at = time.time()
         merge_audio_chunks(output_dir, log_callback, progress_callback)
+        stage_timings["merge"] = time.time() - merge_started_at
         log_callback("Gotowe!")
-        return {"completed": True}
+        return {"completed": True, "stats": persist_stats(completed=True)}
 
     if mode == "pdf_to_audio":
-        output_file = pdf_to_audio_direct(
+        language = get_audio_language_settings(pdf_language)
+        persist_stats("extraction")
+        extraction_started_at = time.time()
+        output_file = extract_pdf_text_direct(
             pdf_path,
             output_dir,
-            tts_provider,
-            speaker_wav,
-            tts_api_key,
-            chatterbox_url,
-            pdf_language,
             llm_url,
             llm_model,
             llm_api_key,
@@ -878,23 +1293,61 @@ def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_cal
             progress_callback,
             pause_event,
             stop_event,
-            piper_voice,
             extraction_mode,
-            edge_voice,
         )
+        stage_timings["extraction"] = time.time() - extraction_started_at
         if stop_event.is_set():
             log_callback("Zatrzymano w trybie PDF -> Audio")
-            return {"stopped": True}
+            return {"stopped": True, "stats": persist_stats("extraction")}
+
+        if not output_file.exists():
+            raise Exception("Ekstrakcja tekstu nie utworzyła output.txt")
+
+        if output_file.stat().st_size == 0:
+            raise Exception("Ekstrakcja tekstu zakończyła się pustym output.txt")
+
+        persist_stats("audio")
+        audio_started_at = time.time()
+        text_to_audio(
+            output_dir,
+            tts_provider,
+            speaker_wav,
+            tts_api_key,
+            chatterbox_url,
+            log_callback,
+            progress_callback,
+            pause_event,
+            stop_event,
+            language["language_code"],
+            edge_voice,
+            piper_voice,
+        )
+        if stop_event.is_set():
+            stage_timings["audio"] = time.time() - audio_started_at
+            log_callback("Zatrzymano w trybie PDF -> Audio")
+            return {"stopped": True, "stats": persist_stats("audio")}
+        stage_timings["audio"] = time.time() - audio_started_at
+
+        persist_stats("merge")
+        merge_started_at = time.time()
+        merge_audio_chunks(output_dir, log_callback, progress_callback)
+        stage_timings["merge"] = time.time() - merge_started_at
         log_callback("Gotowe!")
-        return {"completed": True, "output_file": output_file}
+        return {"completed": True, "output_file": output_file, "stats": persist_stats(completed=True)}
 
+    persist_stats("extraction")
+    extraction_started_at = time.time()
     pdf_to_images(pdf_path, output_dir, log_callback, progress_callback)
+    stage_timings["extraction"] = time.time() - extraction_started_at
 
+    persist_stats("translation")
+    translation_started_at = time.time()
     translate_pdf(pdf_path, output_dir, llm_url, llm_model, llm_api_key, pdf_language, target_language, log_callback, progress_callback, pause_event, stop_event)
+    stage_timings["translation"] = time.time() - translation_started_at
 
     if stop_event.is_set():
         log_callback("Zatrzymano przed audio")
-        return {"stopped": True}
+        return {"stopped": True, "stats": persist_stats("translation")}
 
     pdf_result = None
     if export_pdf:
@@ -902,23 +1355,29 @@ def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_cal
 
     if mode == "translate_to_txt":
         log_callback("Gotowe!")
-        return {"completed": True, "txt_file": output_dir / "output.txt"}
+        return {"completed": True, "txt_file": output_dir / "output.txt", "stats": persist_stats(completed=True)}
 
     if stop_event.is_set():
         log_callback("Zatrzymano przed generowaniem audio")
-        return {"stopped": True}
+        return {"stopped": True, "stats": persist_stats("translation")}
 
     language = get_audio_language_settings(target_language)
+    persist_stats("audio")
+    audio_started_at = time.time()
     text_to_audio(output_dir, tts_provider, speaker_wav, tts_api_key, chatterbox_url, log_callback, progress_callback, pause_event, stop_event, language["language_code"], edge_voice, piper_voice)
+    stage_timings["audio"] = time.time() - audio_started_at
 
     if stop_event.is_set():
         log_callback("Zatrzymano przed scalanie")
-        return {"stopped": True}
+        return {"stopped": True, "stats": persist_stats("audio")}
 
+    persist_stats("merge")
+    merge_started_at = time.time()
     merge_audio_chunks(output_dir, log_callback, progress_callback)
+    stage_timings["merge"] = time.time() - merge_started_at
 
     log_callback("Gotowe!")
-    return {"completed": True, "pdf_file": pdf_result if export_pdf else None}
+    return {"completed": True, "pdf_file": pdf_result if export_pdf else None, "stats": persist_stats(completed=True)}
 
 
 def get_pdf_info(pdf_path: Path) -> dict:

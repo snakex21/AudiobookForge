@@ -30,13 +30,73 @@ Requirements:
 - `ffmpeg` in `PATH`
 - optional `LM Studio` for local OCR/translation workflows
 
+## Choosing A Mode / Provider
+
+- `PDF -> Audio`: best when you want the source language spoken back without translation.
+- `PDF -> Translation -> Audio`: use for full OCR/translation plus audiobook output.
+- `PDF -> Translation -> TXT`: use when you only want the translated `output.txt` for later editing or reuse.
+- `TXT -> Audio`: fastest resume path when `output.txt` already exists and you only need TTS/merge again.
+- `Piper`: offline and privacy-friendly, but requires a downloaded `.onnx` voice model.
+- `Edge TTS`: easiest voice setup and usually better naturalness, but requires network access.
+- `pypdfium2`: first choice for normal text PDFs.
+- `LLM Vision OCR`: fallback for scans, image PDFs, or broken encodings; slower and depends on a vision-capable model.
+
+Resume / progress notes:
+
+- each output folder stores `job_state.json`, `tts_state.json`, and `pipeline_stats.json`
+- rerunning the same job in the same output folder can resume from saved pages/chunks
+- changing TTS voice/provider clears stale audio chunks so resumed audio stays consistent
+
 ## Screenshot
 
 ![AudiobookForge screenshot](docs/screenshot.png)
 
 ## Build / Packaging
 
-Recommended PyInstaller build:
+Release artifacts:
+
+- `release\AudiobookForgeSetup.exe` - Windows installer for the faster `onedir` build
+- `dist\AudiobookForge.exe` - portable single-file build
+
+Build helper scripts:
+
+- `build_release.bat` - builds the portable `onefile` executable
+- `build_folder.bat` - builds the faster `onedir` folder version
+- `build_installer.bat` - builds the `onedir` version and then compiles the installer with Inno Setup 6
+
+PyInstaller spec files:
+
+- `AudiobookForge.spec` - `onefile` build config
+- `AudiobookForge_onedir.spec` - `onedir` build config
+
+Installer config:
+
+- `AudiobookForge.iss` - Inno Setup script used to create `AudiobookForgeSetup.exe`
+
+Portable build:
+
+```bash
+build_release.bat
+```
+
+Folder build:
+
+```bash
+build_folder.bat
+```
+
+Installer build:
+
+```bash
+build_installer.bat
+```
+
+Requirements for installer build:
+
+- Inno Setup 6 installed
+- `ISCC.exe` available in `PATH`, or installed in the default Inno Setup folder
+
+Manual PyInstaller example:
 
 ```bash
 pip install pyinstaller
@@ -49,14 +109,9 @@ Notes:
 - bundle `ffmpeg` separately or ensure it is available in `PATH`
 - if you use `icon.ico`, add `--icon=icon.ico`
 
-Helper script:
-
-```bash
-build_release.bat
-```
-
 Repository hygiene:
 - generated assets such as `piper_models/`, `audiobook_output/`, `pages/`, `chunks/`, `dist/`, and `build/` are ignored via `.gitignore`
+- generated installer output in `release/` is ignored via `.gitignore`
 - `config.json` is intentionally ignored to keep machine-local settings out of version control
 
 ## Known Limitations
