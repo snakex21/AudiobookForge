@@ -96,7 +96,7 @@ Requirements for installer build:
 
 - Inno Setup 6 installed
 - `ISCC.exe` available in `PATH`, or installed in the default Inno Setup folder
-- installer languages include English, Polish, Czech, Hungarian, Finnish, Danish, Norwegian, German, French, Spanish, Italian, Russian, Ukrainian, Turkish, Portuguese, Dutch, and Swedish
+- installer languages include English, Polish, Czech, Romanian, Hungarian, Finnish, Danish, Norwegian, German, French, Spanish, Italian, Russian, Ukrainian, Turkish, Portuguese, Dutch, and Swedish
 
 Manual PyInstaller example:
 
@@ -471,7 +471,7 @@ UI languages:
 - Norwegian
 
 Audio / translation target languages:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 Additional PDF source language codes are available in the UI.
 
@@ -611,7 +611,7 @@ UI-Sprachen:
 - Norsk
 
 Zielsprachen fur Audio / Ubersetzung:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 <a id="de-contributing"></a>
 ### Contributing
@@ -749,7 +749,7 @@ pyinstaller --onedir --windowed --name AudiobookForge app.py
 - Norsk
 
 Языки аудио / перевода:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 <a id="ru-contributing"></a>
 ### Contributing
@@ -885,7 +885,7 @@ pyinstaller --onedir --windowed --name AudiobookForge app.py
 - Norsk
 
 Мови аудіо / перекладу:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 <a id="uk-contributing"></a>
 ### Contributing
@@ -1021,7 +1021,7 @@ Jazyky rozhrani:
 - Norsk
 
 Jazyky audia / prekladu:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 <a id="cs-contributing"></a>
 ### Contributing
@@ -1157,7 +1157,7 @@ Langues de l'interface:
 - Norsk
 
 Langues cible audio / traduction:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 <a id="fr-contributing"></a>
 ### Contributing
@@ -1293,7 +1293,7 @@ Idiomas de la interfaz:
 - Norsk
 
 Idiomas de audio / traduccion:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 <a id="es-contributing"></a>
 ### Contributing
@@ -1429,7 +1429,7 @@ Lingue UI:
 - Norsk
 
 Lingue audio / traduzione:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 <a id="it-contributing"></a>
 ### Contributing
@@ -1567,7 +1567,7 @@ Arayuz dilleri:
 - Norsk
 
 Ses / ceviri hedef dilleri:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 <a id="tr-contributing"></a>
 ### Contributing
@@ -1714,7 +1714,7 @@ Limbi UI:
 - Norwegian
 
 Limbi tinta pentru audio / traducere:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 Coduri suplimentare pentru limba sursa PDF sunt disponibile in UI.
 
@@ -1863,7 +1863,7 @@ UI nyelvek:
 - Norwegian
 
 Audio / forditasi celnyelvek:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 Tovabbi PDF forrasnyelvi kodok is elerhetok a UI-ban.
 
@@ -2012,7 +2012,7 @@ UI-kielet:
 - Norwegian
 
 Audio / kaannoksen kohdekielet:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 Lisa-PDF-lahdekielikoodit ovat saatavilla kayttoliittymassa.
 
@@ -2161,7 +2161,7 @@ UI-sprog:
 - Norwegian
 
 Lyd / oversaettelsens malsprog:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 Yderligere PDF-kildesprogskoder er tilgaengelige i UI'et.
 
@@ -2310,7 +2310,7 @@ UI-sprak:
 - Norwegian
 
 Malspraak for lyd / oversettelse:
-- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`
+- `pol`, `eng`, `deu`, `rus`, `ukr`, `ces`, `fra`, `spa`, `ita`, `por`, `nld`, `hun`, `ron`, `fin`, `swe`, `dan`, `nor`, `tur`
 
 Ytterligere PDF-kildesprakkoder er tilgjengelige i UI.
 

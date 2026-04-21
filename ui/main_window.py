@@ -53,10 +53,22 @@ EDGE_VOICES = [
     "uk-UA-OstapNeural",
     "pt-BR-FranciscaNeural",
     "pt-BR-AntonioNeural",
+    "pt-PT-RaquelNeural",
+    "pt-PT-DuarteNeural",
     "nl-NL-ColetteNeural",
     "nl-NL-MaartenNeural",
     "sv-SE-SofieNeural",
     "sv-SE-MattiasNeural",
+    "fi-FI-NooraNeural",
+    "fi-FI-SelmaNeural",
+    "da-DK-ChristelNeural",
+    "da-DK-JeppeNeural",
+    "nb-NO-PernilleNeural",
+    "nb-NO-FinnNeural",
+    "hu-HU-NoemiNeural",
+    "hu-HU-TamasNeural",
+    "ro-RO-AlinaNeural",
+    "ro-RO-EmilNeural",
     "ja-JP-NanamiNeural",
     "ja-JP-KeitaNeural",
     "ko-KR-SunHiNeural",
@@ -69,7 +81,7 @@ PDF_LANGUAGES = [
     "por", "nld", "hun", "ron", "bul", "slv", "hrv", "srp", "lit", "lav",
     "est", "fin", "swe", "dan", "nor", "tur",
 ]
-TARGET_LANGUAGES = ["pol", "eng", "rus", "deu", "fra", "ces", "ukr", "spa", "ita"]
+TARGET_LANGUAGES = ["pol", "eng", "rus", "deu", "fra", "ces", "ukr", "spa", "ita", "por", "nld", "hun", "ron", "fin", "swe", "dan", "nor", "tur"]
 UI_LANGUAGE_OPTIONS = [
     ("Polski", "pl"),
     ("Cesky", "cs"),
