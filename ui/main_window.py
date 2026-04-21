@@ -69,6 +69,24 @@ EDGE_VOICES = [
     "hu-HU-TamasNeural",
     "ro-RO-AlinaNeural",
     "ro-RO-EmilNeural",
+    "sk-SK-ViktoriaNeural",
+    "sk-SK-LukasNeural",
+    "sl-SI-PetraNeural",
+    "sl-SI-RokNeural",
+    "hr-HR-GabrijelaNeural",
+    "hr-HR-SreckoNeural",
+    "ca-ES-JoanaNeural",
+    "ca-ES-EnricNeural",
+    "af-ZA-AdriNeural",
+    "af-ZA-WillemNeural",
+    "sw-KE-ZuriNeural",
+    "sw-KE-RafikiNeural",
+    "et-EE-AnuNeural",
+    "et-EE-KertNeural",
+    "lv-LV-EveritaNeural",
+    "lv-LV-NilsNeural",
+    "lt-LT-OnaNeural",
+    "lt-LT-LeonasNeural",
     "ja-JP-NanamiNeural",
     "ja-JP-KeitaNeural",
     "ko-KR-SunHiNeural",
@@ -81,7 +99,7 @@ PDF_LANGUAGES = [
     "por", "nld", "hun", "ron", "bul", "slv", "hrv", "srp", "lit", "lav",
     "est", "fin", "swe", "dan", "nor", "tur", "cat", "af", "sw",
 ]
-TARGET_LANGUAGES = ["pol", "eng", "rus", "deu", "fra", "ces", "ukr", "spa", "ita", "por", "nld", "hun", "ron", "fin", "swe", "dan", "nor", "tur"]
+TARGET_LANGUAGES = ["pol", "eng", "rus", "deu", "fra", "ces", "ukr", "spa", "ita", "por", "nld", "hun", "ron", "fin", "swe", "dan", "nor", "tur", "slk", "slv", "hrv", "cat", "af", "sw", "est", "lav", "lit"]
 UI_LANGUAGE_OPTIONS = [
     ("Polski", "pl"),
     ("Cesky", "cs"),
@@ -159,6 +177,26 @@ PIPER_MODEL_PRESETS = {
     "ru_RU-ruslan-medium": [
         ("ru_RU-ruslan-medium.onnx", "https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/ruslan/medium/ru_RU-ruslan-medium.onnx"),
         ("ru_RU-ruslan-medium.onnx.json", "https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/ruslan/medium/ru_RU-ruslan-medium.onnx.json"),
+    ],
+    "sk_SK-lili-medium": [
+        ("sk_SK-lili-medium.onnx", "https://huggingface.co/rhasspy/piper-voices/resolve/main/sk/sk_SK/lili/medium/sk_SK-lili-medium.onnx"),
+        ("sk_SK-lili-medium.onnx.json", "https://huggingface.co/rhasspy/piper-voices/resolve/main/sk/sk_SK/lili/medium/sk_SK-lili-medium.onnx.json"),
+    ],
+    "sl_SI-artur-medium": [
+        ("sl_SI-artur-medium.onnx", "https://huggingface.co/rhasspy/piper-voices/resolve/main/sl/sl_SI/artur/medium/sl_SI-artur-medium.onnx"),
+        ("sl_SI-artur-medium.onnx.json", "https://huggingface.co/rhasspy/piper-voices/resolve/main/sl/sl_SI/artur/medium/sl_SI-artur-medium.onnx.json"),
+    ],
+    "ca_ES-upc_ona-medium": [
+        ("ca_ES-upc_ona-medium.onnx", "https://huggingface.co/rhasspy/piper-voices/resolve/main/ca/ca_ES/upc_ona/medium/ca_ES-upc_ona-medium.onnx"),
+        ("ca_ES-upc_ona-medium.onnx.json", "https://huggingface.co/rhasspy/piper-voices/resolve/main/ca/ca_ES/upc_ona/medium/ca_ES-upc_ona-medium.onnx.json"),
+    ],
+    "sw_CD-lanfrica-medium": [
+        ("sw_CD-lanfrica-medium.onnx", "https://huggingface.co/rhasspy/piper-voices/resolve/main/sw/sw_CD/lanfrica/medium/sw_CD-lanfrica-medium.onnx"),
+        ("sw_CD-lanfrica-medium.onnx.json", "https://huggingface.co/rhasspy/piper-voices/resolve/main/sw/sw_CD/lanfrica/medium/sw_CD-lanfrica-medium.onnx.json"),
+    ],
+    "lv_LV-aivars-medium": [
+        ("lv_LV-aivars-medium.onnx", "https://huggingface.co/rhasspy/piper-voices/resolve/main/lv/lv_LV/aivars/medium/lv_LV-aivars-medium.onnx"),
+        ("lv_LV-aivars-medium.onnx.json", "https://huggingface.co/rhasspy/piper-voices/resolve/main/lv/lv_LV/aivars/medium/lv_LV-aivars-medium.onnx.json"),
     ],
 }
 TRANSLATIONS = {
