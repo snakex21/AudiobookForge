@@ -178,6 +178,9 @@ TRANSLATIONS = {
         "edge_voice": "Głos Edge TTS",
         "speaker_sample": "Próbka głosu (WAV)",
         "llm": "LLM (Tłumaczenie)",
+        "api_key": "API key",
+        "show_key": "Pokaż",
+        "hide_key": "Ukryj",
         "url": "URL",
         "model": "Model",
         "scan_models": "Skanuj modele LLM",
@@ -351,6 +354,9 @@ TRANSLATIONS = {
         "edge_voice": "Edge TTS Voice",
         "speaker_sample": "Voice Sample (WAV)",
         "llm": "LLM (Translation)",
+        "api_key": "API key",
+        "show_key": "Show",
+        "hide_key": "Hide",
         "url": "URL",
         "model": "Model",
         "scan_models": "Scan LLM Models",
@@ -3189,7 +3195,7 @@ def run_app():
         llm_frame,
         textvariable=llm_provider_var,
         state="readonly",
-        values=["lmstudio", "ollama", "openai_compatible", "chatterbox", "custom"],
+        values=["lmstudio", "ollama", "openai_compatible", "openai", "openrouter", "anthropic", "google", "moonshot", "nvidia", "groq", "mistral", "together", "chatterbox", "custom"],
         font=FONT,
     )
     llm_provider_combo.pack(fill="x", padx=8, pady=(0, 4))
@@ -3207,7 +3213,53 @@ def run_app():
         bd=4,
     ).pack(fill="x", padx=8, pady=(0, 4))
 
+    llm_api_key_frame = tk.Frame(llm_frame, bg=BG)
+    tk.Label(llm_api_key_frame, text=tr("api_key"), bg=BG, fg=FG_MUTED, font=FONT).pack(anchor="w", padx=8, pady=(6, 0))
+    llm_api_key_var = tk.StringVar(value=state.config.get("llm_api_key", ""))
+    llm_api_key_row = tk.Frame(llm_api_key_frame, bg=BG)
+    llm_api_key_row.pack(fill="x", padx=8, pady=(0, 4))
+    llm_api_key_entry = tk.Entry(
+        llm_api_key_row,
+        textvariable=llm_api_key_var,
+        bg=BG2,
+        fg=FG,
+        font=FONT,
+        insertbackground=FG,
+        relief="flat",
+        bd=4,
+        show="*",
+    )
+    llm_api_key_entry.pack(side="left", fill="x", expand=True)
+    llm_api_key_visible = {"active": False}
+
+    def toggle_llm_api_key_visibility():
+        llm_api_key_visible["active"] = not llm_api_key_visible["active"]
+        llm_api_key_entry.config(show="" if llm_api_key_visible["active"] else "*")
+        llm_api_key_toggle.config(text=tr("hide_key") if llm_api_key_visible["active"] else tr("show_key"))
+
+    llm_api_key_toggle = tk.Button(
+        llm_api_key_row,
+        text=tr("show_key"),
+        bg=BG2,
+        fg=ACCENT,
+        font=FONT,
+        relief="flat",
+        cursor="hand2",
+        command=toggle_llm_api_key_visibility,
+    )
+    llm_api_key_toggle.pack(side="left", padx=(4, 0))
+    llm_api_key_var.trace_add("write", lambda *_: update_config_values(llm_api_key=llm_api_key_var.get()))
+
     updating_llm_url = {"active": False}
+
+    def provider_requires_api_key(provider: str) -> bool:
+        return provider not in {"lmstudio", "ollama", "chatterbox"}
+
+    def update_llm_api_key_visibility(*_):
+        if provider_requires_api_key(llm_provider_var.get()) or llm_provider_var.get() == "custom":
+            llm_api_key_frame.pack(fill="x")
+        else:
+            llm_api_key_frame.pack_forget()
 
     def on_llm_provider_change(*_):
         provider = llm_provider_var.get()
@@ -3217,6 +3269,7 @@ def run_app():
             url_var.set(LLM_URLS[provider])
             state.config["llm_url"] = url_var.get()
             updating_llm_url["active"] = False
+        update_llm_api_key_visibility()
 
     def on_llm_url_change(*_):
         state.config["llm_url"] = url_var.get()
@@ -3298,6 +3351,7 @@ def run_app():
         speaker_wav_var.set(saved_config.get("speaker_wav", ""))
         llm_provider_var.set(saved_config.get("llm_provider", "lmstudio"))
         url_var.set(saved_config.get("llm_url", LLM_URLS.get(saved_config.get("llm_provider", "lmstudio"), "")))
+        llm_api_key_var.set(state.config.get("llm_api_key", ""))
         model_var.set(saved_config.get("llm_model", ""))
         copy_source_var.set(bool(saved_config.get("copy_source_to_project", True)))
 
@@ -3444,6 +3498,7 @@ def run_app():
         cursor="hand2",
         command=scan_llm_models,
     ).pack(fill="x", padx=8, pady=(0, 6))
+    update_llm_api_key_visibility()
 
     btn_frame = tk.Frame(left, bg=BG)
     btn_frame.pack(fill="x", pady=(0, 8))

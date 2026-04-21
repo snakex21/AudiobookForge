@@ -38,10 +38,19 @@ LLM_URLS = {
     "ollama": "http://localhost:11434/v1",
     "openai_compatible": "http://localhost:8080/v1",
     "chatterbox": "http://localhost:8004/v1",
+    "openai": "https://api.openai.com/v1",
+    "openrouter": "https://openrouter.ai/api/v1",
+    "anthropic": "https://api.anthropic.com/v1",
+    "google": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "moonshot": "https://api.moonshot.ai/v1",
+    "nvidia": "https://integrate.api.nvidia.com/v1",
+    "groq": "https://api.groq.com/openai/v1",
+    "mistral": "https://api.mistral.ai/v1",
+    "together": "https://api.together.xyz/v1",
 }
 LLM_MODEL = None
 
-CLOUD_PROVIDERS = ["openrouter", "anthropic", "openai", "nvidia", "groq", "mistral", "together"]
+CLOUD_PROVIDERS = ["openrouter", "anthropic", "openai", "google", "moonshot", "nvidia", "groq", "mistral", "together"]
 TTS_PROVIDERS = ["chatterbox", "piper", "elevenlabs", "edge_tts", "openai_tts", "custom"]
 MODES = ["pdf_to_audio", "translate_to_audio", "translate_to_txt"]
 AUDIO_LANGUAGE_SETTINGS = {
