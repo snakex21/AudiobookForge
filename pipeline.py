@@ -54,6 +54,15 @@ AUDIO_LANGUAGE_SETTINGS = {
     "ukr": {"language_code": "uk", "edge_voice": "uk-UA-PolinaNeural"},
     "spa": {"language_code": "es", "edge_voice": "es-ES-ElviraNeural"},
     "ita": {"language_code": "it", "edge_voice": "it-IT-ElsaNeural"},
+    "por": {"language_code": "pt", "edge_voice": "pt-PT-RaquelNeural"},
+    "nld": {"language_code": "nl", "edge_voice": "nl-NL-ColetteNeural"},
+    "hun": {"language_code": "hu", "edge_voice": "hu-HU-NoemiNeural"},
+    "ron": {"language_code": "ro", "edge_voice": "ro-RO-AlinaNeural"},
+    "fin": {"language_code": "fi", "edge_voice": "fi-FI-NooraNeural"},
+    "swe": {"language_code": "sv", "edge_voice": "sv-SE-SofieNeural"},
+    "dan": {"language_code": "da", "edge_voice": "da-DK-ChristelNeural"},
+    "nor": {"language_code": "nb", "edge_voice": "nb-NO-PernilleNeural"},
+    "tur": {"language_code": "tr", "edge_voice": "tr-TR-EmelNeural"},
 }
 LANGUAGE_NAMES = {
     "pol": "polski",
@@ -65,6 +74,15 @@ LANGUAGE_NAMES = {
     "ukr": "ukraiński",
     "spa": "hiszpański",
     "ita": "włoski",
+    "por": "portugalski",
+    "nld": "holenderski",
+    "hun": "węgierski",
+    "ron": "rumuński",
+    "fin": "fiński",
+    "swe": "szwedzki",
+    "dan": "duński",
+    "nor": "norweski",
+    "tur": "turecki",
 }
 
 LANGUAGE_PROMPT_NAMES = {
@@ -79,7 +97,12 @@ LANGUAGE_PROMPT_NAMES = {
     "ita": "Italian",
     "por": "Portuguese",
     "nld": "Dutch",
+    "hun": "Hungarian",
+    "ron": "Romanian",
+    "fin": "Finnish",
     "swe": "Swedish",
+    "dan": "Danish",
+    "nor": "Norwegian",
     "tur": "Turkish",
 }
 
@@ -95,7 +118,12 @@ LANGUAGE_STOPWORDS = {
     "ita": {"il", "lo", "la", "gli", "le", "di", "del", "e", "in", "per", "con", "che", "una", "un", "come", "è", "e"},
     "por": {"o", "a", "os", "as", "de", "do", "da", "e", "em", "para", "com", "que", "uma", "um", "como", "é"},
     "nld": {"de", "het", "een", "en", "van", "in", "op", "voor", "met", "dat", "als", "is", "te", "door", "uit", "niet"},
+    "hun": {"és", "a", "az", "hogy", "nem", "egy", "van", "meg", "de", "ha", "mint", "is", "már", "el", "ki", "le"},
+    "ron": {"și", "in", "în", "la", "de", "cu", "pe", "este", "un", "o", "pentru", "din", "care", "ca", "nu", "sau"},
+    "fin": {"ja", "on", "ei", "se", "että", "kun", "oli", "myös", "vain", "jos", "tai", "kuin", "mutta", "niin", "voi", "olla"},
     "swe": {"och", "det", "att", "i", "en", "som", "på", "för", "med", "är", "av", "till", "den", "detta", "inte", "från"},
+    "dan": {"og", "det", "at", "i", "en", "som", "på", "for", "med", "er", "af", "til", "den", "ikke", "fra", "har"},
+    "nor": {"og", "det", "at", "i", "en", "som", "på", "for", "med", "er", "av", "til", "den", "ikke", "fra", "har"},
     "tur": {"ve", "bir", "bu", "için", "ile", "da", "de", "olan", "olarak", "çok", "gibi", "ama", "daha", "mi", "ne", "ya"},
 }
 

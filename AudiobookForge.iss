@@ -30,6 +30,7 @@ LanguageDetectionMethod=uilanguage
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "polish"; MessagesFile: "compiler:Languages\Polish.isl"
 Name: "czech"; MessagesFile: "compiler:Languages\Czech.isl"
+Name: "romanian"; MessagesFile: "Romanian.isl"
 Name: "hungarian"; MessagesFile: "compiler:Languages\Hungarian.isl"
 Name: "finnish"; MessagesFile: "compiler:Languages\Finnish.isl"
 Name: "danish"; MessagesFile: "compiler:Languages\Danish.isl"
@@ -77,6 +78,10 @@ polish.LaunchProgram=Uruchom %1
 czech.CreateDesktopShortcut=Vytvořit zástupce na ploše
 czech.AdditionalIcons=Další ikony:
 czech.LaunchProgram=Spustit %1
+
+romanian.CreateDesktopShortcut=Creeaza o scurtatura pe desktop
+romanian.AdditionalIcons=Pictograme suplimentare:
+romanian.LaunchProgram=Lanseaza %1
 
 hungarian.CreateDesktopShortcut=Asztali parancsikon letrehozasa
 hungarian.AdditionalIcons=Tovabbi ikonok:
