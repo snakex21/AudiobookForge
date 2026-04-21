@@ -4,7 +4,7 @@ LanguageID=$0436
 LanguageCodePage=1252
 
 [Messages]
-BeveledLabel=[name] Opstelling
+BeveledLabel=Opstelling
 ButtonBack=< &Terug
 ButtonNext=&Volgende >
 ButtonInstall=&Installeer

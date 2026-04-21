@@ -48,6 +48,18 @@ class AppStateTests(unittest.TestCase):
         self.assertEqual(entry["config"]["project_source_file"], r"C:\projects\book\source\book.pdf")
         self.assertTrue(entry["config"]["copy_source_to_project"])
 
+    def test_recent_project_entry_uses_output_dir_name_for_generic_output_txt(self):
+        entry = build_recent_project_entry(
+            {
+                "mode": "txt_to_audio",
+                "txt_path": r"C:\books\output.txt",
+                "output_dir": r"C:\projects\MyBook",
+            }
+        )
+
+        self.assertIsNotNone(entry)
+        self.assertEqual(entry["name"], "MyBook")
+
 
 if __name__ == "__main__":
     unittest.main()

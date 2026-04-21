@@ -73,6 +73,8 @@ def build_recent_project_entry(config: dict, status: str | None = None) -> dict 
         snapshot[key] = value
 
     source_name = Path(source_path).name if source_path else Path(output_dir or "project").name
+    if source_name.lower() == "output.txt" and output_dir:
+        source_name = Path(output_dir).name or source_name
     return {
         "name": source_name or "project",
         "source_path": source_path,
