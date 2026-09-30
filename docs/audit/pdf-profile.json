@@ -1,0 +1,25 @@
+{
+  "reopen_per_page_ms": [
+    169.785,
+    142.188,
+    146.883,
+    118.282,
+    155.087,
+    167.074,
+    150.866
+  ],
+  "job_scoped_document_ms": [
+    23.106,
+    26.073,
+    27.614,
+    32.063,
+    70.724,
+    63.153,
+    42.821
+  ],
+  "pages": 100,
+  "output_identical": true,
+  "median_reopen_ms": 150.866,
+  "median_shared_ms": 32.063,
+  "microbenchmark_speedup": 4.705
+}

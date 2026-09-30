@@ -9,6 +9,7 @@ import shutil
 import requests
 import sys
 import re
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Optional, Callable, Literal, List
 from PIL import Image
@@ -1120,9 +1121,16 @@ def generate_audio_with_chatterbox(text: str, output_path: Path,
         raise Exception(f"Chatterbox error: {resp.status_code} {resp.text}")
 
 
-def generate_audio_with_piper(text: str, output_path: Path,
-                              model_path: Optional[Path] = None):
+def load_piper_voice(model_path: Path):
+    """Load once per job; never retain a model globally across jobs/voice changes."""
     from piper.voice import PiperVoice
+    if not model_path.exists():
+        raise FileNotFoundError(f"Model Piper nie znaleziony: {model_path}")
+    return PiperVoice.load(str(model_path))
+
+
+def generate_audio_with_piper(text: str, output_path: Path,
+                              model_path: Optional[Path] = None, *, voice=None):
     import wave
 
     if model_path is None:
@@ -1131,7 +1139,8 @@ def generate_audio_with_piper(text: str, output_path: Path,
     if not model_path.exists():
         raise Exception(f"Model Piper nie znaleziony: {model_path}")
 
-    voice = PiperVoice.load(str(model_path))
+    if voice is None:
+        voice = load_piper_voice(model_path)
 
     wav_path = output_path.with_suffix(".wav")
     with wave.open(str(wav_path), "wb") as wav_file:
@@ -1213,6 +1222,7 @@ def text_to_audio(output_dir: Path, tts_provider: str, speaker_wav: Optional[Pat
     total_chunks = len(chunk_list)
     failed_chunks = []
     completed_chunks = 0
+    piper_engine = None  # Lazy: a fully resumed job must not load a model.
 
     for i, chunk in enumerate(chunk_list):
         if stop_event and stop_event.is_set():
@@ -1240,33 +1250,46 @@ def text_to_audio(output_dir: Path, tts_provider: str, speaker_wav: Optional[Pat
             progress_callback("audio", chunk_num, total_chunks)
             continue
 
-        if chunk_state.get("status") == "completed" and chunk_file.exists():
+        if chunk_state.get("status") == "completed" and chunk_file.is_file() and chunk_file.stat().st_size > 0:
             log_callback(f"Pominięto chunk {i+1}")
             progress_callback("audio", i+1, total_chunks)
             completed_chunks += 1
             continue
 
+        generated_file = chunk_file.with_name("." + chunk_file.stem + ".pending.mp3")
         try:
+            generated_file.unlink(missing_ok=True)
             if tts_provider == "edge_tts":
                 voice = edge_voice or "pl-PL-ZofiaNeural"
-                generate_audio_with_edge_tts(chunk, chunk_file, voice=voice, log_callback=log_callback)
+                generate_audio_with_edge_tts(chunk, generated_file, voice=voice, log_callback=log_callback)
             elif tts_provider == "piper":
                 piper_model = PROJECT_DIR / "piper_models" / f"{piper_voice}.onnx"
-                generate_audio_with_piper(chunk, chunk_file, model_path=piper_model)
+                if piper_engine is None:
+                    piper_engine = load_piper_voice(piper_model)
+                generate_audio_with_piper(chunk, generated_file, model_path=piper_model, voice=piper_engine)
             elif tts_provider == "elevenlabs":
-                if api_key:
-                    generate_audio_with_elevenlabs(chunk, chunk_file, api_key)
+                if not api_key:
+                    raise ValueError("ElevenLabs API key is required")
+                generate_audio_with_elevenlabs(chunk, generated_file, api_key)
             elif tts_provider == "openai_tts":
-                if api_key:
-                    generate_audio_with_openai_tts(chunk, chunk_file, api_key)
+                if not api_key:
+                    raise ValueError("OpenAI TTS API key is required")
+                generate_audio_with_openai_tts(chunk, generated_file, api_key)
             elif tts_provider == "chatterbox":
-                generate_audio_with_chatterbox(chunk, chunk_file, speaker_wav=speaker_wav, url=chatterbox_url)
+                generate_audio_with_chatterbox(chunk, generated_file, speaker_wav=speaker_wav, url=chatterbox_url)
 
+            else:
+                raise ValueError(f"Unknown TTS provider: {tts_provider}")
+
+            if not generated_file.is_file() or generated_file.stat().st_size == 0:
+                raise RuntimeError("TTS provider did not produce non-empty audio (check provider and API key)")
+            os.replace(generated_file, chunk_file)
             tts_state["chunks"][chunk_key] = {"status": "completed"}
             save_json_file(tts_state_file, tts_state)
             log_callback(f"Wygenerowano chunk {i+1}/{total_chunks}")
             completed_chunks += 1
         except Exception as e:
+            generated_file.unlink(missing_ok=True)
             chunk_file.unlink(missing_ok=True)
             tts_state["chunks"][chunk_key] = {"status": "failed", "error": str(e)}
             save_json_file(tts_state_file, tts_state)
@@ -1312,16 +1335,19 @@ def fix_polish_encoding(text: str) -> str:
     return text
 
 
-def extract_text_pypdfium(pdf_path: Path, page_num: int) -> str:
+def extract_text_pypdfium(pdf_path: Path, page_num: int, pdf_document=None) -> str:
     import pypdfium2 as pdfium
 
-    pdf = pdfium.PdfDocument(str(pdf_path))
-    try:
+    with ExitStack() as resources:
+        pdf = pdf_document
+        if pdf is None:
+            pdf = pdfium.PdfDocument(str(pdf_path))
+            resources.callback(pdf.close)
         page = pdf[page_num - 1]
+        resources.callback(page.close)
         textpage = page.get_textpage()
+        resources.callback(textpage.close)
         return textpage.get_text_range().strip()
-    finally:
-        pdf.close()
 
 
 def render_page_to_image(pdf_path: Path, page_num: int, output_dir: Path, dpi: int = 200) -> Path:
@@ -1380,7 +1406,17 @@ def extract_pdf_text_direct(pdf_path: Path, output_dir: Path, llm_url: str, llm_
         if existing_pages > 0:
             log_callback(f"Wznów od strony {existing_pages + 1}")
 
-    with pdfplumber.open(str(pdf_path)) as pdf, open(output_file, "a", encoding="utf-8") as handle:
+    with ExitStack() as resources:
+        pdf = resources.enter_context(pdfplumber.open(str(pdf_path)))
+        handle = resources.enter_context(open(output_file, "a", encoding="utf-8"))
+        pdfium_document = None
+        if extraction_mode != "llm_vision":
+            try:
+                import pypdfium2 as pdfium
+                pdfium_document = pdfium.PdfDocument(str(pdf_path))
+                resources.callback(pdfium_document.close)
+            except Exception:
+                pass  # Keep the existing pdfplumber/OCR fallback.
         total_pages = len(pdf.pages)
 
         for index, page in enumerate(pdf.pages, start=1):
@@ -1409,7 +1445,9 @@ def extract_pdf_text_direct(pdf_path: Path, output_dir: Path, llm_url: str, llm_
                     log_callback(f"Błąd Vision strony {page_num}: {e}")
             else:
                 try:
-                    text = extract_text_pypdfium(pdf_path, page_num)
+                    if pdfium_document is None:
+                        raise RuntimeError("PDFium unavailable; use pdfplumber fallback")
+                    text = extract_text_pypdfium(pdf_path, page_num, pdf_document=pdfium_document)
                 except Exception:
                     text = (page.extract_text() or "").strip()
                 text = fix_polish_encoding(text)

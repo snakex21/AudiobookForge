@@ -5,3 +5,4 @@ pillow
 requests
 reportlab
 edge-tts
+pypdfium2

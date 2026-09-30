@@ -1,0 +1,36 @@
+test_cancellation_skips_remaining_chunks (test_performance_paths.PerformancePathTests.test_cancellation_skips_remaining_chunks) ... ok
+test_empty_completed_chunk_is_regenerated (test_performance_paths.PerformancePathTests.test_empty_completed_chunk_is_regenerated) ... ok
+test_failed_atomic_publish_never_marks_chunk_complete (test_performance_paths.PerformancePathTests.test_failed_atomic_publish_never_marks_chunk_complete) ... ok
+test_missing_key_cannot_mark_nonexistent_audio_complete (test_performance_paths.PerformancePathTests.test_missing_key_cannot_mark_nonexistent_audio_complete) ... ok
+test_piper_loads_once_and_resume_does_not_load (test_performance_paths.PerformancePathTests.test_piper_loads_once_and_resume_does_not_load) ... ok
+test_real_pdf_shared_document_matches_individual_reads (test_performance_paths.PerformancePathTests.test_real_pdf_shared_document_matches_individual_reads) ... ok
+test_stale_noncompleted_audio_cannot_be_reused_as_new_success (test_performance_paths.PerformancePathTests.test_stale_noncompleted_audio_cannot_be_reused_as_new_success) ... ok
+test_ensure_project_source_copy_copies_source_into_project (test_pipeline.PipelineTests.test_ensure_project_source_copy_copies_source_into_project) ... ok
+test_keeps_sentence_with_numbers (test_pipeline.PipelineTests.test_keeps_sentence_with_numbers) ... ok
+test_keeps_short_legitimate_text (test_pipeline.PipelineTests.test_keeps_short_legitimate_text) ... ok
+test_run_pipeline_rejects_empty_pdf_path (test_pipeline.PipelineTests.test_run_pipeline_rejects_empty_pdf_path) ... ok
+test_skips_page_number_only_chunk (test_pipeline.PipelineTests.test_skips_page_number_only_chunk) ... ok
+test_skips_punctuation_only_chunk (test_pipeline.PipelineTests.test_skips_punctuation_only_chunk) ... ok
+test_collect_pipeline_stats_persists_stage_details (test_pipeline_stats.PipelineStatsTests.test_collect_pipeline_stats_persists_stage_details) ... ok
+test_recent_project_entry_keeps_project_source_copy (test_state.AppStateTests.test_recent_project_entry_keeps_project_source_copy) ... ok
+test_recent_project_entry_uses_output_dir_name_for_generic_output_txt (test_state.AppStateTests.test_recent_project_entry_uses_output_dir_name_for_generic_output_txt) ... FAIL
+test_reset_events_clears_pause_and_stop (test_state.AppStateTests.test_reset_events_clears_pause_and_stop) ... /workspace/scratch/cdc79842cc4e/audiobookforge-review/ui/state.py:92: DeprecationWarning: 'locale.getdefaultlocale' is deprecated and slated for removal in Python 3.15. Use setlocale(), getencoding() and getlocale() instead.
+  default_locale = locale.getdefaultlocale()[0]
+ok
+test_save_writes_current_config (test_state.AppStateTests.test_save_writes_current_config) ... ok
+
+======================================================================
+FAIL: test_recent_project_entry_uses_output_dir_name_for_generic_output_txt (test_state.AppStateTests.test_recent_project_entry_uses_output_dir_name_for_generic_output_txt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/cdc79842cc4e/audiobookforge-review/tests/test_state.py", line 61, in test_recent_project_entry_uses_output_dir_name_for_generic_output_txt
+    self.assertEqual(entry["name"], "MyBook")
+AssertionError: 'C:\\books\\output.txt' != 'MyBook'
+- C:\books\output.txt
++ MyBook
+
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.135s
+
+FAILED (failures=1)
