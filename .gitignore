@@ -11,3 +11,5 @@ release/
 !AudiobookForge_onedir.spec
 pages/
 chunks/
+vendor/
+tts_test/

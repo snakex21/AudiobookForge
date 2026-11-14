@@ -5,25 +5,17 @@ import locale
 import sys
 import time
 
-
-def get_base_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parent.parent
+import app_paths
 
 
-def get_resource_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        meipass = getattr(sys, "_MEIPASS", None)
-        if meipass:
-            return Path(meipass)
-    return Path(__file__).resolve().parent.parent
-
-
-PROJECT_DIR = get_base_dir()
-RESOURCE_DIR = get_resource_dir()
-CONFIG_PATH = PROJECT_DIR / "config.json"
-DEFAULT_OUTPUT_DIR = str(PROJECT_DIR / "audiobook_output")
+PATHS = app_paths.PATHS
+PROJECT_DIR = PATHS.install_dir
+RESOURCE_DIR = PATHS.resource_dir
+DATA_DIR = PATHS.data_dir
+CONFIG_PATH = PATHS.config_path
+MODELS_DIR = PATHS.models_dir
+MODEL_SEARCH_DIRS = PATHS.model_search_dirs
+DEFAULT_OUTPUT_DIR = str(PATHS.output_root)
 DEFAULT_PDF_PATH = ""
 DEFAULT_SPEAKER_WAV = ""
 RECENT_PROJECT_LIMIT = 8
@@ -193,6 +185,7 @@ class AppState:
         self.stop_event = threading.Event()
         self.running = False
         self.logs = []
+        self.migrated_config = None
 
     def reset_events(self):
         self.pause_event.clear()
@@ -201,10 +194,12 @@ class AppState:
     def save(self):
         self.config["recent_projects"] = self._normalize_recent_projects(self.config.get("recent_projects", []))
         serializable_config = {k: v for k, v in self.config.items() if not k.startswith("_")}
+        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(serializable_config, f, indent=2)
 
     def load(self):
+        self.migrated_config = app_paths.migrate_if_needed(PATHS)
         if CONFIG_PATH.exists():
             with open(CONFIG_PATH, "r", encoding="utf-8") as f:
                 self.config.update(json.load(f))

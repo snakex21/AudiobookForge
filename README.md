@@ -108,13 +108,22 @@ pyinstaller --onedir --windowed --name AudiobookForge app.py
 Notes:
 - `--onedir` is the preferred mode for this project
 - `--onefile` may be problematic with `piper-tts` and `pypdfium2`
-- bundle `ffmpeg` separately or ensure it is available in `PATH`
+- bundle `ffmpeg` separately or ensure it is available in `PATH`; to ship it in the installer, put `ffmpeg.exe` in `vendor\ffmpeg\` before running `build_installer.bat`
+- the installer version is read from `version.py` (`__version__`)
 - if you use `icon.ico`, add `--icon=icon.ico`
 
 Repository hygiene:
 - generated assets such as `piper_models/`, `audiobook_output/`, `pages/`, `chunks/`, `dist/`, and `build/` are ignored via `.gitignore`
 - generated installer output in `release/` is ignored via `.gitignore`
 - `config.json` is intentionally ignored to keep machine-local settings out of version control
+
+Where the installed app keeps its data (since 1.0.6):
+- settings: `%APPDATA%\AudiobookForge\config.json` (an old `config.json` next to the exe is copied there on first run)
+- Piper voice models: `%LOCALAPPDATA%\AudiobookForge\piper_models` (models in the install folder are still found)
+- audiobooks: the folder you choose, default `Documents\AudiobookForge`
+- ffmpeg lookup order: bundled `ffmpeg\ffmpeg.exe` next to the exe, then `PATH`, then `"ffmpeg_path"` in `config.json`
+- uninstalling removes only program files; settings, models and audiobooks are kept
+- running from source (`python app.py`) keeps everything in the repository folder as before
 
 ## Known Limitations
 
@@ -254,7 +263,7 @@ Wczytanie gotowego pliku `.txt` i wygenerowanie audiobooka.
 <a id="pl-configuration"></a>
 ### Configuration
 
-Główna konfiguracja jest przechowywana w `config.json`.
+Główna konfiguracja jest przechowywana w `config.json`. W wersji instalowanej (od 1.0.6) jest to `%APPDATA%\AudiobookForge\config.json`, modele Piper trafiają do `%LOCALAPPDATA%\AudiobookForge\piper_models`, a audiobooki do wybranego folderu (domyślnie `Dokumenty\AudiobookForge`). Deinstalacja usuwa tylko pliki programu. Własną ścieżkę do ffmpeg można podać w polu `"ffmpeg_path"`.
 
 Najważniejsze pola:
 

@@ -12,7 +12,9 @@ import time
 import json
 import zipfile
 from pipeline import run_pipeline, list_llm_models, LLM_URLS, build_job_signature, LANGUAGE_NAMES
-from ui.state import state, PROJECT_DIR, RESOURCE_DIR, CONFIG_PATH
+from ui.state import state, PROJECT_DIR, RESOURCE_DIR, CONFIG_PATH, MODELS_DIR, MODEL_SEARCH_DIRS, DEFAULT_OUTPUT_DIR
+from app_paths import list_piper_models, list_piper_model_files
+from version import __version__
 
 
 def normalize_app_lang_code(app_lang: str) -> str:
@@ -272,7 +274,7 @@ PIPER_MODEL_PRESETS = {
 }
 TRANSLATIONS = {
     "pl": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "Język UI",
         "language_legend": "Legenda",
         "language_legend_title": "Legenda języków",
@@ -321,7 +323,7 @@ TRANSLATIONS = {
         "recent_projects": "Ostatnie projekty",
     },
     "cs": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "Jazyk UI",
         "work_mode": "Rezim prace",
         "mode_pdf_audio": "PDF → Audio",
@@ -364,7 +366,7 @@ TRANSLATIONS = {
         "recent_projects": "Poslední projekty",
     },
     "ro": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "Limba UI",
         "work_mode": "Mod de lucru",
         "mode_pdf_audio": "PDF → Audio",
@@ -407,7 +409,7 @@ TRANSLATIONS = {
         "recent_projects": "Proiecte recente",
     },
     "hu": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "UI nyelv",
         "work_mode": "Munkamod",
         "mode_pdf_audio": "PDF → Audio",
@@ -450,7 +452,7 @@ TRANSLATIONS = {
         "recent_projects": "Legutobbi projektek",
     },
     "en": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "UI Language",
         "language_legend": "Legend",
         "language_legend_title": "Language legend",
@@ -499,7 +501,7 @@ TRANSLATIONS = {
         "recent_projects": "Recent Projects",
     },
     "de": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "UI-Sprache",
         "work_mode": "Arbeitsmodus",
         "mode_pdf_audio": "PDF → Audio",
@@ -542,7 +544,7 @@ TRANSLATIONS = {
         "recent_projects": "Letzte Projekte",
     },
     "fr": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "Langue UI",
         "work_mode": "Mode de travail",
         "mode_pdf_audio": "PDF → Audio",
@@ -584,7 +586,7 @@ TRANSLATIONS = {
         "recent_projects": "Projets récents",
     },
     "es": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "Idioma UI",
         "work_mode": "Modo de trabajo",
         "mode_pdf_audio": "PDF → Audio",
@@ -626,7 +628,7 @@ TRANSLATIONS = {
         "recent_projects": "Proyectos recientes",
     },
     "it": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "Lingua UI",
         "work_mode": "Modalita di lavoro",
         "mode_pdf_audio": "PDF → Audio",
@@ -668,7 +670,7 @@ TRANSLATIONS = {
         "recent_projects": "Progetti recenti",
     },
     "ru": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "Yazyk UI",
         "work_mode": "Rezhim raboty",
         "mode_pdf_audio": "PDF → Audio",
@@ -711,7 +713,7 @@ TRANSLATIONS = {
         "recent_projects": "Недавние проекты",
     },
     "uk": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "Mova UI",
         "work_mode": "Rezhym roboty",
         "mode_pdf_audio": "PDF → Audio",
@@ -754,7 +756,7 @@ TRANSLATIONS = {
         "recent_projects": "Останні проєкти",
     },
     "tr": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "UI Dili",
         "work_mode": "Calisma modu",
         "mode_pdf_audio": "PDF → Audio",
@@ -797,7 +799,7 @@ TRANSLATIONS = {
         "recent_projects": "Son projeler",
     },
     "pt": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "Idioma UI",
         "work_mode": "Modo de trabalho",
         "mode_pdf_audio": "PDF → Audio",
@@ -840,7 +842,7 @@ TRANSLATIONS = {
         "recent_projects": "Projetos recentes",
     },
     "nl": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "UI-taal",
         "work_mode": "Werkmodus",
         "mode_pdf_audio": "PDF → Audio",
@@ -883,7 +885,7 @@ TRANSLATIONS = {
         "recent_projects": "Recente projecten",
     },
     "sv": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "UI-språk",
         "work_mode": "Arbetslage",
         "mode_pdf_audio": "PDF → Audio",
@@ -926,7 +928,7 @@ TRANSLATIONS = {
         "recent_projects": "Senaste projekt",
     },
     "fi": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "UI-kieli",
         "work_mode": "Tyotila",
         "mode_pdf_audio": "PDF → Audio",
@@ -969,7 +971,7 @@ TRANSLATIONS = {
         "recent_projects": "Viimeisimmat projektit",
     },
     "da": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "UI-sprog",
         "work_mode": "Arbejdstilstand",
         "mode_pdf_audio": "PDF → Audio",
@@ -1012,7 +1014,7 @@ TRANSLATIONS = {
         "recent_projects": "Seneste projekter",
     },
     "no": {
-        "app_title": "AUDIOBOOK FORGE v1.0",
+        "app_title": f"AUDIOBOOK FORGE v{__version__}",
         "ui_language": "UI-språk",
         "work_mode": "Arbeidsmodus",
         "mode_pdf_audio": "PDF → Audio",
@@ -2706,11 +2708,15 @@ def run_app():
     def get_suggested_output_dir(source_path: str) -> Path:
         source = Path(source_path) if source_path else None
         job_name = sanitize_job_name(source.stem) if source_path else "audiobook_job"
-        return PROJECT_DIR / "audiobook_output" / job_name
+        return get_output_root() / job_name
+
+    def get_output_root() -> Path:
+        configured = (state.config.get("output_root") or "").strip()
+        return Path(configured) if configured else Path(DEFAULT_OUTPUT_DIR)
 
     def resolve_output_dir(value: str) -> Path:
-        candidate = Path(value) if value else PROJECT_DIR / "audiobook_output"
-        return candidate if candidate.is_absolute() else PROJECT_DIR / candidate
+        candidate = Path(value) if value else get_output_root()
+        return candidate if candidate.is_absolute() else get_output_root() / candidate
 
     def summarize_existing_job(output_dir: Path) -> tuple[dict | None, str]:
         state_file = output_dir / "job_state.json"
@@ -2787,7 +2793,7 @@ def run_app():
         return template.format(*args)
 
     root = tk.Tk()
-    root.title("AudiobookForge v1.0")
+    root.title(f"AudiobookForge v{__version__}")
     icon_ico_path = RESOURCE_DIR / "assets" / "app_icon.ico"
     icon_png_path = RESOURCE_DIR / "assets" / "app_icon.png"
     try:
@@ -3251,9 +3257,8 @@ def run_app():
     voice_var.trace_add("write", lambda *_: update_config_values(piper_voice=voice_var.get(), include_recent=True))
 
     def scan_piper_models():
-        models_dir = PROJECT_DIR / "piper_models"
-        models_dir.mkdir(exist_ok=True)
-        models = [f.stem for f in models_dir.glob("*.onnx")]
+        MODELS_DIR.mkdir(parents=True, exist_ok=True)
+        models = list_piper_models(MODEL_SEARCH_DIRS)
         if models:
             voice_combo["values"] = models
             if state.config.get("piper_voice") not in models:
@@ -3669,8 +3674,8 @@ def run_app():
                     manifest = json.loads(archive.read("manifest.json").decode("utf-8"))
 
                 if manifest:
-                    models_dir = PROJECT_DIR / "piper_models"
-                    models_dir.mkdir(exist_ok=True)
+                    models_dir = MODELS_DIR
+                    models_dir.mkdir(parents=True, exist_ok=True)
                     imported_models = 0
                     for model_member in manifest.get("models", []):
                         destination = models_dir / Path(model_member).name
@@ -3744,8 +3749,8 @@ def run_app():
                 if imported_config is None and not model_members and not output_members:
                     raise Exception(tr_extra("zip_missing"))
 
-                models_dir = PROJECT_DIR / "piper_models"
-                models_dir.mkdir(exist_ok=True)
+                models_dir = MODELS_DIR
+                models_dir.mkdir(parents=True, exist_ok=True)
                 imported_models = 0
                 for member in model_members:
                     destination = models_dir / Path(member).name
@@ -3876,12 +3881,10 @@ def run_app():
             manifest["config"] = {k: v for k, v in state.config.items() if not k.startswith("_")}
 
         if include_models_var.get():
-            models_dir = PROJECT_DIR / "piper_models"
-            if models_dir.exists():
-                for model_path in sorted(models_dir.glob("*.onnx*")):
-                    archive_name = Path("piper_models") / model_path.name
-                    export_entries.append((model_path, archive_name))
-                    manifest["models"].append(archive_name.as_posix())
+            for model_path in list_piper_model_files(MODEL_SEARCH_DIRS):
+                archive_name = Path("piper_models") / model_path.name
+                export_entries.append((model_path, archive_name))
+                manifest["models"].append(archive_name.as_posix())
 
         for project in selected_projects:
             project_config = dict(project.get("config") or {})
@@ -3966,8 +3969,8 @@ def run_app():
     def install_piper_model():
         import urllib.request
 
-        models_dir = PROJECT_DIR / "piper_models"
-        models_dir.mkdir(exist_ok=True)
+        models_dir = MODELS_DIR
+        models_dir.mkdir(parents=True, exist_ok=True)
         preset = piper_preset_var.get()
         files = PIPER_MODEL_PRESETS.get(preset, [])
 

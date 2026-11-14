@@ -15,6 +15,8 @@ from typing import Optional, Callable, Literal, List
 from PIL import Image
 import io
 
+import app_paths
+
 try:
     import torch
 except Exception:
@@ -26,12 +28,17 @@ SPEAKER_WAV = "speaker.wav"
 
 
 def get_base_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parent
+    return app_paths.get_install_dir()
 
 
-PROJECT_DIR = get_base_dir()
+PATHS = app_paths.PATHS
+PROJECT_DIR = PATHS.install_dir
+CONFIG_PATH = PATHS.config_path
+
+# ffmpeg must never hang a job forever.
+FFMPEG_PROBE_TIMEOUT = 15
+FFMPEG_CONVERT_TIMEOUT = 300
+FFMPEG_MERGE_TIMEOUT = 3600
 
 LLM_PROVIDER = "lmstudio"
 LLM_URLS = {
@@ -489,6 +496,17 @@ def resolve_project_path(path_value: str, default: str = OUTPUT_DIR) -> Path:
     return candidate if candidate.is_absolute() else PROJECT_DIR / candidate
 
 
+def resolve_output_path(path_value: Optional[str]) -> Path:
+    """Output dir from config. Empty -> default output root; relative -> under it
+    (under the repo folder when running from source)."""
+    if not path_value:
+        return PATHS.output_root
+    candidate = Path(path_value)
+    if candidate.is_absolute():
+        return candidate
+    return (PROJECT_DIR if PATHS.portable else PATHS.output_root) / candidate
+
+
 def resolve_source_path(path_value: str) -> Optional[Path]:
     if not path_value:
         return None
@@ -779,20 +797,81 @@ def should_skip_tts_chunk(text: str) -> bool:
     return letters <= 3 and digits + symbols >= max(3, letters)
 
 
-def resolve_ffmpeg_path() -> str:
-    ffmpeg_path = shutil.which("ffmpeg")
-    if ffmpeg_path and not ffmpeg_path.lower().endswith("python313\\scripts\\ffmpeg.exe"):
-        return ffmpeg_path
+_FFMPEG_ENV_CLEAN = {"PYTHONHOME": "", "PYTHONPATH": ""}
+_ffmpeg_cache: dict = {}
 
-    candidates = [
-        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Replay" / "resources" / "bin" / "ffmpeg.exe",
-        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Python" / "Python313" / "Lib" / "site-packages" / "panda3d_tools" / "ffmpeg.exe",
-    ]
+
+def bundled_ffmpeg_candidates(paths: "app_paths.AppPaths" = PATHS) -> List[Path]:
+    """ffmpeg shipped with the app (the installer's ffmpeg folder or a PyInstaller bundle)."""
+    exe = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
+    candidates = []
+    for base in (paths.install_dir, paths.resource_dir):
+        for candidate in (base / "ffmpeg" / exe, base / "ffmpeg" / "bin" / exe, base / exe):
+            if candidate not in candidates:
+                candidates.append(candidate)
+    return candidates
+
+
+def ffmpeg_works(path: str) -> bool:
+    """True when ``path -version`` runs and exits 0 within the probe timeout."""
+    if path in _ffmpeg_cache:
+        return _ffmpeg_cache[path]
+    try:
+        result = subprocess.run(
+            [path, "-hide_banner", "-version"],
+            capture_output=True,
+            timeout=FFMPEG_PROBE_TIMEOUT,
+            env={**os.environ, **_FFMPEG_ENV_CLEAN},
+        )
+        ok = result.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        ok = False
+    _ffmpeg_cache[path] = ok
+    return ok
+
+
+def _configured_ffmpeg_path() -> str:
+    try:
+        return str(load_config(CONFIG_PATH).get("ffmpeg_path") or "").strip()
+    except (OSError, ValueError):
+        return ""
+
+
+def resolve_ffmpeg_path(configured_path: Optional[str] = None) -> str:
+    """Find a working ffmpeg: bundled with the app, then PATH, then the
+    ``ffmpeg_path`` setting in config.json. Each candidate is probed with
+    ``-version`` so broken shims on PATH are skipped."""
+    candidates: List[str] = [str(c) for c in bundled_ffmpeg_candidates() if c.is_file()]
+    on_path = shutil.which("ffmpeg")
+    if on_path:
+        candidates.append(on_path)
+    configured = configured_path if configured_path is not None else _configured_ffmpeg_path()
+    if configured:
+        candidates.append(configured)
+
     for candidate in candidates:
-        if candidate.exists():
-            return str(candidate)
+        if ffmpeg_works(candidate):
+            return candidate
 
-    raise Exception("Nie znaleziono działającego ffmpeg.exe")
+    raise Exception(
+        "Nie znaleziono działającego ffmpeg. Zainstaluj ffmpeg i dodaj go do PATH "
+        "albo ustaw \"ffmpeg_path\" w config.json."
+    )
+
+
+def run_ffmpeg(args: List[str], timeout: float) -> subprocess.CompletedProcess:
+    """Run ffmpeg with a hard timeout; the process is killed when it expires."""
+    cmd = [resolve_ffmpeg_path(), *args]
+    try:
+        return subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env={**os.environ, **_FFMPEG_ENV_CLEAN},
+        )
+    except subprocess.TimeoutExpired:
+        raise Exception(f"ffmpeg przekroczył limit czasu ({int(timeout)} s): {' '.join(args[:4])}")
 
 
 def list_llm_models(url: str, api_key: Optional[str] = None, log_callback: Optional[Callable[[str], None]] = None) -> List[str]:
@@ -1134,7 +1213,7 @@ def generate_audio_with_piper(text: str, output_path: Path,
     import wave
 
     if model_path is None:
-        model_path = PROJECT_DIR / "piper_models" / "pl_PL-gosia-medium.onnx"
+        model_path = app_paths.find_piper_model("pl_PL-gosia-medium", PATHS.model_search_dirs)
 
     if not model_path.exists():
         raise Exception(f"Model Piper nie znaleziony: {model_path}")
@@ -1150,14 +1229,10 @@ def generate_audio_with_piper(text: str, output_path: Path,
     if wav_size == 0:
         raise Exception("Piper wygenerował pusty WAV")
 
-    ffmpeg_path = resolve_ffmpeg_path()
-    result = subprocess.run(
-        [ffmpeg_path, "-i", str(wav_path), "-y", str(output_path)],
-        capture_output=True,
-        text=True,
-        env={**os.environ, "PYTHONHOME": "", "PYTHONPATH": ""}
-    )
-    wav_path.unlink(missing_ok=True)
+    try:
+        result = run_ffmpeg(["-i", str(wav_path), "-y", str(output_path)], FFMPEG_CONVERT_TIMEOUT)
+    finally:
+        wav_path.unlink(missing_ok=True)
 
     if result.returncode != 0:
         raise Exception(f"ffmpeg error: {result.stderr}")
@@ -1263,7 +1338,7 @@ def text_to_audio(output_dir: Path, tts_provider: str, speaker_wav: Optional[Pat
                 voice = edge_voice or "pl-PL-ZofiaNeural"
                 generate_audio_with_edge_tts(chunk, generated_file, voice=voice, log_callback=log_callback)
             elif tts_provider == "piper":
-                piper_model = PROJECT_DIR / "piper_models" / f"{piper_voice}.onnx"
+                piper_model = app_paths.find_piper_model(piper_voice, PATHS.model_search_dirs)
                 if piper_engine is None:
                     piper_engine = load_piper_voice(piper_model)
                 generate_audio_with_piper(chunk, generated_file, model_path=piper_model, voice=piper_engine)
@@ -1527,9 +1602,10 @@ def merge_audio_chunks(output_dir: Path, log_callback: Callable[[str], None], pr
     for i, chunk in enumerate(chunks):
         progress_callback("merge", i+1, total)
 
-    ffmpeg_path = resolve_ffmpeg_path()
-    cmd = [ffmpeg_path, "-f", "concat", "-safe", "0", "-i", str(filelist), "-c", "copy", "-y", str(output_file)]
-    result = subprocess.run(cmd, capture_output=True, text=True, env={**os.environ, "PYTHONHOME": "", "PYTHONPATH": ""})
+    result = run_ffmpeg(
+        ["-f", "concat", "-safe", "0", "-i", str(filelist), "-c", "copy", "-y", str(output_file)],
+        FFMPEG_MERGE_TIMEOUT,
+    )
 
     if result.returncode != 0:
         log_callback(f"Błąd ffmpeg: {result.stderr}")
@@ -1600,7 +1676,7 @@ def run_pipeline(config: dict, log_callback: Callable[[str], None], progress_cal
     started_at = time.time()
     pdf_path = resolve_configured_pdf_path(config)
     project_source_path = resolve_project_source_path(config)
-    output_dir = resolve_project_path(config.get("output_dir", OUTPUT_DIR))
+    output_dir = resolve_output_path(config.get("output_dir"))
     speaker_wav = Path(config.get("speaker_wav", "speaker.wav")) if config.get("speaker_wav") else None
     txt_path = Path(config.get("txt_path")) if config.get("txt_path") else None
     mode = config.get("mode", "translate_to_audio")
@@ -1826,12 +1902,13 @@ def get_pdf_info(pdf_path: Path) -> dict:
         return {"pages": 0, "filename": pdf_path.name}
 
 
-def save_config(config: dict, path: Path = PROJECT_DIR / "config.json"):
+def save_config(config: dict, path: Path = CONFIG_PATH):
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2)
 
 
-def load_config(path: Path = PROJECT_DIR / "config.json") -> dict:
+def load_config(path: Path = CONFIG_PATH) -> dict:
     if path.exists():
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)

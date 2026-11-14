@@ -1,12 +1,33 @@
 #define MyAppName "AudiobookForge"
-#define MyAppVersion "1.0"
+; Version comes from version.py (__version__ = "x.y.z"); override with /DMyAppVersion=x.y.z
+#ifndef MyAppVersion
+  #define VersionFile FileOpen(AddBackslash(SourcePath) + "version.py")
+  #if !VersionFile
+    #error version.py not found
+  #endif
+  #define VersionLine FileRead(VersionFile)
+  #expr FileClose(VersionFile)
+  #define VersionStart Pos('"', VersionLine) + 1
+  #define VersionRest Copy(VersionLine, VersionStart)
+  #define MyAppVersion Copy(VersionRest, 1, Pos('"', VersionRest) - 1)
+#endif
+#if MyAppVersion == ""
+  #error Could not read __version__ from version.py
+#endif
+; AppId is overridable only so test builds do not collide with a real install
+#ifndef MyAppId
+  #define MyAppId "AudiobookForge"
+#endif
 #define MyAppPublisher "AudiobookForge"
 #define MyAppExeName "AudiobookForge.exe"
 
 [Setup]
-AppId=AudiobookForge
+AppId={#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} {#MyAppVersion}
+VersionInfoVersion={#MyAppVersion}
+UninstallDisplayName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
@@ -22,6 +43,8 @@ WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
+; /CURRENTUSER installs per-user without admin rights (used for test installs)
+PrivilegesRequiredOverridesAllowed=commandline
 ShowLanguageDialog=yes
 UsePreviousLanguage=no
 LanguageDetectionMethod=uilanguage
@@ -59,11 +82,15 @@ Name: "swedish"; MessagesFile: "compiler:Languages\Swedish.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopShortcut}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
-[Dirs]
-Name: "{app}"; Permissions: users-modify
+; No [Dirs] permissions: the install folder stays read-only for standard users.
+; Settings live in %APPDATA%\AudiobookForge, models in %LOCALAPPDATA%\AudiobookForge,
+; audiobooks in the folder the user picks (default Documents\AudiobookForge).
 
 [Files]
 Source: "dist\AudiobookForge\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+#if FileExists(AddBackslash(SourcePath) + "vendor\ffmpeg\ffmpeg.exe")
+Source: "vendor\ffmpeg\*"; DestDir: "{app}\ffmpeg"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -72,10 +99,43 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 
-[UninstallDelete]
-Type: filesandordirs; Name: "{app}"
+; No UninstallDelete section: the uninstaller removes only the files it installed.
+; config.json, downloaded models and generated audiobooks are kept.
+
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
+begin
+  { Versions up to 1.0.5 granted Users:Modify on the install folder.
+    Reset it to inherited permissions so an upgrade does not keep that hole open. }
+  if (CurStep = ssPostInstall) and IsAdminInstallMode then
+    Exec(ExpandConstant('{sys}\icacls.exe'), '"' + ExpandConstant('{app}') + '" /reset /T /C /Q',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  SettingsDir: String;
+begin
+  if CurUninstallStep <> usPostUninstall then
+    exit;
+  SettingsDir := ExpandConstant('{userappdata}\{#MyAppName}');
+  if UninstallSilent or not FileExists(SettingsDir + '\config.json') then
+    exit;
+  { Default button is "Yes" = keep settings. }
+  if MsgBox(FmtMessage(CustomMessage('KeepSettingsPrompt'), [SettingsDir]),
+            mbConfirmation, MB_YESNO or MB_DEFBUTTON1) = IDNO then
+  begin
+    DeleteFile(SettingsDir + '\config.json');
+    RemoveDir(SettingsDir);
+  end;
+end;
 
 [CustomMessages]
+KeepSettingsPrompt=Keep your AudiobookForge settings?%n%n%1\config.json%n%nChoose No to delete them. Generated audiobooks and downloaded voice models are never removed.
+polish.KeepSettingsPrompt=Zachować ustawienia AudiobookForge?%n%n%1\config.json%n%nWybierz Nie, aby je usunąć. Wygenerowane audiobooki i pobrane modele głosów nigdy nie są usuwane.
+
 english.CreateDesktopShortcut=Create a desktop shortcut
 english.AdditionalIcons=Additional icons:
 english.LaunchProgram=Launch %1
