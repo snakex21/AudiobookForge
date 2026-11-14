@@ -13,9 +13,9 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
@@ -53,11 +53,12 @@ jobs:
       - name: Check bundled ffmpeg
         shell: pwsh
         run: |
-          & dist\AudiobookForge\ffmpeg\ffmpeg.exe -hide_banner -version | Select-Object -First 1
+          $out = & dist\AudiobookForge\ffmpeg\ffmpeg.exe -hide_banner -version
           if ($LASTEXITCODE -ne 0) { throw "bundled ffmpeg does not run" }
+          $out | Select-Object -First 1
           Get-ChildItem release | Format-Table Name, Length
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: AudiobookForge-release
           path: |
@@ -74,8 +75,8 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}"
           $notes = "docs/releases/$($tag.TrimStart('v')).md"
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -ne 0) {
+          $existing = gh release list --json tagName --jq '.[].tagName' --limit 100
+          if ($existing -notcontains $tag) {
             gh release create $tag --title "AudiobookForge $tag" --notes-file $notes --verify-tag
             if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
           }
