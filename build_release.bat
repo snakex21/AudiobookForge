@@ -3,7 +3,7 @@ cd /d "%~dp0"
 
 rem Full release: onedir build with bundled ffmpeg, installer, portable zip and SHA256SUMS.txt in release\
 set "NO_PAUSE=1"
-call build_installer.bat
+call "%~dp0build_installer.bat"
 if errorlevel 1 exit /b 1
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\package_release.ps1"

@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 
 set "NO_PAUSE=1"
-call build_folder.bat
+call "%~dp0build_folder.bat"
 if errorlevel 1 exit /b 1
 
 set "ISCC="
