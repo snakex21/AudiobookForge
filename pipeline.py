@@ -838,16 +838,16 @@ def _configured_ffmpeg_path() -> str:
 
 
 def resolve_ffmpeg_path(configured_path: Optional[str] = None) -> str:
-    """Find a working ffmpeg: bundled with the app, then PATH, then the
-    ``ffmpeg_path`` setting in config.json. Each candidate is probed with
-    ``-version`` so broken shims on PATH are skipped."""
+    """Find a working ffmpeg: bundled with the app (``ffmpeg\\ffmpeg.exe`` next to
+    the exe), then the ``ffmpeg_path`` setting in config.json, then PATH. Each
+    candidate is probed with ``-version`` so broken shims are skipped."""
     candidates: List[str] = [str(c) for c in bundled_ffmpeg_candidates() if c.is_file()]
-    on_path = shutil.which("ffmpeg")
-    if on_path:
-        candidates.append(on_path)
     configured = configured_path if configured_path is not None else _configured_ffmpeg_path()
     if configured:
         candidates.append(configured)
+    on_path = shutil.which("ffmpeg")
+    if on_path:
+        candidates.append(on_path)
 
     for candidate in candidates:
         if ffmpeg_works(candidate):

@@ -28,7 +28,7 @@ python app.py
 
 Requirements:
 - Python `3.10+`
-- `ffmpeg` in `PATH`
+- `ffmpeg`: bundled with the installer and the portable zip since 1.0.6; when running from source, put it in `PATH`, fetch it into `vendor\ffmpeg\` with `scripts\fetch_ffmpeg.ps1`, or set `"ffmpeg_path"`
 - optional `LM Studio` for local OCR/translation workflows
 
 ## Choosing A Mode / Provider
@@ -108,7 +108,9 @@ pyinstaller --onedir --windowed --name AudiobookForge app.py
 Notes:
 - `--onedir` is the preferred mode for this project
 - `--onefile` may be problematic with `piper-tts` and `pypdfium2`
-- bundle `ffmpeg` separately or ensure it is available in `PATH`; to ship it in the installer, put `ffmpeg.exe` in `vendor\ffmpeg\` before running `build_installer.bat`
+- `build_folder.bat` runs `scripts\fetch_ffmpeg.ps1`, which downloads the pinned LGPL ffmpeg build, checks its SHA-256 and copies `ffmpeg.exe` + `LICENSE.txt` to `dist\AudiobookForge\ffmpeg\` (the binary is never committed)
+- `build_release.bat` builds the installer, the portable zip and `release\SHA256SUMS.txt`; `.github/workflows/release.yml` runs the same steps on `v*` tags
+- bundled ffmpeg version, license (LGPL v3) and source links: `THIRD_PARTY_NOTICES.md`
 - the installer version is read from `version.py` (`__version__`)
 - if you use `icon.ico`, add `--icon=icon.ico`
 
@@ -121,7 +123,7 @@ Where the installed app keeps its data (since 1.0.6):
 - settings: `%APPDATA%\AudiobookForge\config.json` (an old `config.json` next to the exe is copied there on first run)
 - Piper voice models: `%LOCALAPPDATA%\AudiobookForge\piper_models` (models in the install folder are still found)
 - audiobooks: the folder you choose, default `Documents\AudiobookForge`
-- ffmpeg lookup order: bundled `ffmpeg\ffmpeg.exe` next to the exe, then `PATH`, then `"ffmpeg_path"` in `config.json`
+- ffmpeg lookup order: bundled `ffmpeg\ffmpeg.exe` next to the exe, then `"ffmpeg_path"` in `config.json`, then `PATH`
 - uninstalling removes only program files; settings, models and audiobooks are kept
 - running from source (`python app.py`) keeps everything in the repository folder as before
 
@@ -208,7 +210,7 @@ High-level architecture notes are available here:
 
 - Python `3.10+`
 - `tkinter` dostępny w instalacji Pythona
-- `ffmpeg` dostępny w `PATH`
+- `ffmpeg`: od 1.0.6 dołączony do instalatora i wersji przenośnej; przy uruchamianiu ze źródeł w `PATH`, w `vendor\ffmpeg\` (`scripts\fetch_ffmpeg.ps1`) albo w `"ffmpeg_path"`
 - `piper-tts`
 - `pypdfium2`
 - Pakiety z `requirements.txt`
@@ -224,7 +226,7 @@ pip install -r requirements.txt
 pip install pypdfium2 piper-tts
 ```
 
-Zainstaluj `ffmpeg` i upewnij się, że polecenie `ffmpeg` działa w terminalu.
+Przy uruchamianiu ze źródeł zainstaluj `ffmpeg` i upewnij się, że polecenie `ffmpeg` działa w terminalu, albo pobierz dołączaną kompilację: `powershell -File scripts\fetch_ffmpeg.ps1`. Wersja instalowana i przenośna mają ffmpeg w zestawie (LGPL v3, szczegóły w `THIRD_PARTY_NOTICES.md`).
 
 Uruchomienie:
 
@@ -263,7 +265,7 @@ Wczytanie gotowego pliku `.txt` i wygenerowanie audiobooka.
 <a id="pl-configuration"></a>
 ### Configuration
 
-Główna konfiguracja jest przechowywana w `config.json`. W wersji instalowanej (od 1.0.6) jest to `%APPDATA%\AudiobookForge\config.json`, modele Piper trafiają do `%LOCALAPPDATA%\AudiobookForge\piper_models`, a audiobooki do wybranego folderu (domyślnie `Dokumenty\AudiobookForge`). Deinstalacja usuwa tylko pliki programu. Własną ścieżkę do ffmpeg można podać w polu `"ffmpeg_path"`.
+Główna konfiguracja jest przechowywana w `config.json`. W wersji instalowanej (od 1.0.6) jest to `%APPDATA%\AudiobookForge\config.json`, modele Piper trafiają do `%LOCALAPPDATA%\AudiobookForge\piper_models`, a audiobooki do wybranego folderu (domyślnie `Dokumenty\AudiobookForge`). Deinstalacja usuwa tylko pliki programu. ffmpeg jest szukany w kolejności: dołączony `ffmpeg\ffmpeg.exe` obok exe, potem pole `"ffmpeg_path"` w `config.json`, potem `PATH`.
 
 Najważniejsze pola:
 

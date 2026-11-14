@@ -184,15 +184,17 @@ class FfmpegResolutionTests(unittest.TestCase):
                 patch.object(pipeline, "ffmpeg_works", side_effect=lambda p: p in working):
             return pipeline.resolve_ffmpeg_path(configured)
 
-    def test_order_is_bundled_then_path_then_settings(self):
+    def test_order_is_bundled_then_settings_then_path(self):
         all_ok = {str(self.bundled), "C:/path/ffmpeg.exe", "D:/custom/ffmpeg.exe"}
         self.assertEqual(self.resolve(bundled=True, on_path="C:/path/ffmpeg.exe",
                                       configured="D:/custom/ffmpeg.exe", working=all_ok), str(self.bundled))
         self.assertEqual(self.resolve(on_path="C:/path/ffmpeg.exe", configured="D:/custom/ffmpeg.exe",
-                                      working=all_ok), "C:/path/ffmpeg.exe")
-        self.assertEqual(self.resolve(configured="D:/custom/ffmpeg.exe", working=all_ok), "D:/custom/ffmpeg.exe")
+                                      working=all_ok), "D:/custom/ffmpeg.exe")
+        self.assertEqual(self.resolve(on_path="C:/path/ffmpeg.exe", working=all_ok), "C:/path/ffmpeg.exe")
 
-    def test_broken_path_shim_falls_through_to_settings(self):
+    def test_broken_candidates_fall_through(self):
+        self.assertEqual(self.resolve(bundled=True, on_path="C:/path/ffmpeg.exe", configured="D:/custom/ffmpeg.exe",
+                                      working={"C:/path/ffmpeg.exe"}), "C:/path/ffmpeg.exe")
         self.assertEqual(self.resolve(on_path="C:/shim/ffmpeg.exe", configured="D:/custom/ffmpeg.exe",
                                       working={"D:/custom/ffmpeg.exe"}), "D:/custom/ffmpeg.exe")
 
@@ -223,6 +225,21 @@ class VersionTests(unittest.TestCase):
         iss = (REPO_DIR / "AudiobookForge.iss").read_text(encoding="utf-8")
         self.assertIn("version.py", iss)
         self.assertIsNone(re.search(r'#define\s+MyAppVersion\s+"', iss))
+
+    def test_release_bundles_pinned_ffmpeg_with_license(self):
+        fetch = (REPO_DIR / "scripts" / "fetch_ffmpeg.ps1").read_text(encoding="utf-8")
+        archive_sha = re.search(r'\$ArchiveSha256\s*=\s*"([0-9a-f]{64})"', fetch)
+        exe_sha = re.search(r'\$ExeSha256\s*=\s*"([0-9a-f]{64})"', fetch)
+        self.assertIsNotNone(archive_sha)
+        self.assertIsNotNone(exe_sha)
+        self.assertIn("-lgpl", fetch)
+        notices = (REPO_DIR / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+        self.assertIn(archive_sha.group(1), notices)
+        self.assertIn(exe_sha.group(1), notices)
+        self.assertIn("ffmpeg\\ffmpeg.exe", (REPO_DIR / "AudiobookForge.iss").read_text(encoding="utf-8"))
+        build = (REPO_DIR / "build_folder.bat").read_text(encoding="utf-8")
+        self.assertIn("fetch_ffmpeg.ps1", build)
+        self.assertIn("LICENSE.txt", build)
 
     def test_installer_does_not_open_permissions_or_wipe_app_dir(self):
         iss = (REPO_DIR / "AudiobookForge.iss").read_text(encoding="utf-8")

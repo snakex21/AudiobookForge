@@ -87,10 +87,15 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopShortcut}"; GroupDescription
 ; audiobooks in the folder the user picks (default Documents\AudiobookForge).
 
 [Files]
-Source: "dist\AudiobookForge\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-#if FileExists(AddBackslash(SourcePath) + "vendor\ffmpeg\ffmpeg.exe")
-Source: "vendor\ffmpeg\*"; DestDir: "{app}\ffmpeg"; Flags: ignoreversion recursesubdirs createallsubdirs
+; dist\AudiobookForge already contains ffmpeg\ffmpeg.exe, ffmpeg\LICENSE.txt and
+; THIRD_PARTY_NOTICES.md (added by build_folder.bat from scripts\fetch_ffmpeg.ps1).
+#if !FileExists(AddBackslash(SourcePath) + "dist\AudiobookForge\ffmpeg\ffmpeg.exe")
+  #error dist\AudiobookForge\ffmpeg\ffmpeg.exe missing - run build_folder.bat (it fetches the pinned ffmpeg)
 #endif
+#if !FileExists(AddBackslash(SourcePath) + "dist\AudiobookForge\ffmpeg\LICENSE.txt")
+  #error dist\AudiobookForge\ffmpeg\LICENSE.txt missing - run build_folder.bat
+#endif
+Source: "dist\AudiobookForge\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

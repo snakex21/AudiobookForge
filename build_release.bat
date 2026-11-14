@@ -1,15 +1,14 @@
 @echo off
 cd /d "%~dp0"
 
-echo Installing PyInstaller...
-python -m pip install pyinstaller
+rem Full release: onedir build with bundled ffmpeg, installer, portable zip and SHA256SUMS.txt in release\
+set "NO_PAUSE=1"
+call build_installer.bat
+if errorlevel 1 exit /b 1
 
-echo Building AudiobookForge...
-echo Preferred mode: --onefile
-if exist "dist\AudiobookForge" rmdir /s /q "dist\AudiobookForge"
-if exist "dist\AudiobookForge.exe" del /q "dist\AudiobookForge.exe"
-pyinstaller --clean AudiobookForge.spec
+powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\package_release.ps1"
+if errorlevel 1 exit /b 1
 
 echo.
-echo Build finished. Output file: dist\AudiobookForge.exe
-if not defined NO_PAUSE pause
+echo Release files are in release\
+exit /b 0
