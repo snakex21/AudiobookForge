@@ -89,15 +89,15 @@ def build_recent_project_entry(config: dict, status: str | None = None) -> dict 
 def detect_system_language() -> str:
     candidates = []
     try:
-        default_locale = locale.getdefaultlocale()[0]
-        if default_locale:
-            candidates.append(default_locale)
-    except Exception:
-        pass
-    try:
         current_locale = locale.getlocale()[0]
         if current_locale:
             candidates.append(current_locale)
+    except Exception:
+        pass
+    try:
+        configured_locale = locale.setlocale(locale.LC_CTYPE)
+        if configured_locale and configured_locale not in {"C", "POSIX"}:
+            candidates.append(configured_locale)
     except Exception:
         pass
 
